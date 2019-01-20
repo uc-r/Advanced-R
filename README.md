@@ -15,34 +15,35 @@ material covered in this training:
 
 **Day 1**
 
-| Topic                                |     Time      |
-| :----------------------------------- | :-----------: |
-| Breakfast / Social time              |  8:00 - 9:00  |
-| Introductions                        |  9:00 - 9:30  |
-| Writing functions                    | 9:30 - 10:45  |
-| Break                                | 10:45 - 11:00 |
-| Conditions: Preventative maintenance | 11:00 - 12:00 |
-| Lunch                                | 12:00 - 1:00  |
-| Debugging: Reactive maintenance      |  1:00 - 1:45  |
-| Functional programming               |  1:45 - 2:45  |
-| Break                                |  2:45 - 3:00  |
-| Case study                           |  3:00 - 4:00  |
-| Q\&A                                 |  4:00 - 4:30  |
+| Topic                                 |     Time      |
+| :------------------------------------ | :-----------: |
+| Breakfast / Social time               |  8:00 - 9:00  |
+| Introductions & review of assumptions | 9:00 - 10:00  |
+| Inference                             | 10:00 - 10:45 |
+| Break                                 | 10:45 - 11:00 |
+| Unsupervised learning                 | 11:00 - 12:00 |
+| Lunch                                 | 12:00 - 1:00  |
+| Model prep + feature engineering      |  1:00 - 1:45  |
+| Regression + cousins                  |  1:45 - 2:45  |
+| Break                                 |  2:45 - 3:00  |
+| Tree-based methods                    |  3:00 - 4:00  |
+| Q\&A                                  |  4:00 - 4:30  |
 
 **Day 2**
 
-| Topic                                  |     Time      |
-| :------------------------------------- | :-----------: |
-| Breakfast / Social time                |  8:00 - 9:00  |
-| Review                                 |  9:00 - 9:30  |
-| Object oriented programming with R     | 9:30 - 10:30  |
-| Break                                  | 10:30 - 10:45 |
-| Tidy evaluation                        | 10:45 - 12:00 |
-| Lunch                                  | 12:00 - 1:00  |
-| Measuring & improving code performance |  1:00 - 2:30  |
-| Break                                  |  2:30 - 2:45  |
-| Writing your first package             |  2:45 - 4:00  |
-| Q\&A                                   |  4:00 - 4:30  |
+| Topic                                  |     Time     |
+| :------------------------------------- | :----------: |
+| Breakfast / Social time                | 8:00 - 9:00  |
+| Writing functions                      |     ???      |
+| Tidy evaluation                        |     ???      |
+| Conditions: Preventative maintenance   |     ???      |
+| Debugging: Reactive maintenance        |     ???      |
+| Measuring & improving code performance |     ???      |
+| Lunch                                  | 12:00 - 1:00 |
+| Writing your first package             | 1:00 - 2:30  |
+| Break                                  | 2:30 - 2:45  |
+| Shiny & RStudio addins                 | 2:45 - 4:00  |
+| Q\&A                                   | 4:00 - 4:30  |
 
 ***Schedule is still being refined and is subject to change; however,
 the topics should remain the same.***
