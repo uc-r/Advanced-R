@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Unsupervised Learning</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-02-28" />
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: clear, center, middle
+
+background-image: url(images/unsupervised-cover.jpg)
+background-position: center
+background-size: contain
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font200.white[Unsupervised Learning]
+
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* .bold[clustering]: reduce the observation space of a data set
+* .bold[dimension reduction]:  reduce the feature space of a data set
+
+&lt;img src="images/clustering_vs_pca.jpeg" width="2247" style="display: block; margin: auto;" /&gt;
+
+
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* .bold[clustering]: reduce the observation space of a data set
+  - _k_-means clustering
+  - hierarchical clustering
+* .bold[dimension reduction]: reduce the feature space of a data set
+  - principal components analysis (PCA)
+  - factor analysis
+  - autoencoders
+* .bold[Generalized low rank models]: a generalization of the clustering &amp; dimension reduction (i.e. matrix factorization)
+
+   
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* clustering: reduce the observation space of a data set
+  - .bold.blue[_k_-means clustering]
+  - .bold.blue[hierarchical clustering]
+* dimension reduction: reduce the feature space of a data set
+  - .bold.blue[principal components analysis (PCA)]
+  - factor analysis
+* Generalized low rank models: a generalization of the clustering &amp; dimension reduction (i.e. matrix factorization)
+
+&lt;br&gt;&lt;br&gt;
+.center.bold.white[.content-box-blue-dark[Today's focus]]
+   
+---
+# Prerequisites
+
+.pull-left[
+
+.center.font120[Packages]
+
+
+```r
+library(factoextra)
+```
+
+]
+
+.pull-right[
+
+.center.font120[Data]
+
+
+```r
+USArrests # clustering data
+```
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Clustering]
+
+---
+# Types of clustering
+
+Clustering is a broad set of techniques for ___finding subgroups of observations___ within a data set.
+
+.pull-left[
+
+* .bold[Objective]: we want observations in the same group to be similar and observations in different groups to be dissimilar
+
+* .bold[Use cases:]
+  - customer segmentation
+  - concentration of crime activity
+  - common patient traits
+  - voter profiles
+  
+]
+
+.pull-right[
+
+&lt;br&gt;&lt;br&gt;
+&lt;img src="images/cluster-icon.jpg" width="1089" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Types of clustering
+
+Clustering is a broad set of techniques for ___finding subgroups of observations___ within a data set.
+
+.pull-left[
+
+* .bold[Objective]: we want observations in the same group to be similar and observations in different groups to be dissimilar
+
+* .bold[Use cases:]
+  - customer segmentation
+  - concentration of crime activity
+  - common patient traits
+  - voter profiles
+  
+]
+
+.pull-right[
+
+* .bold[Methods]: several clustering algorithms exists:
+  - k-means
+  - hierarchical
+  - partitioning around mediods (PAM)
+  - clustering large applications (CLARA)
+
+]
+
+---
+# Measuring observation distances
+
+.pull-left[
+* classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
+
+* distance measures
+  - Euclidean: `\(d_{euc}(x,y) = \sqrt{\sum^n_{i=1}(x_i - y_i)^2}\)`
+  - Manhattan: `\(d_{man}(x,y) = \sum^n_{i=1}|(x_i - y_i)|\)`
+
+]
+
+.pull-right[
+
+
+```r
+(two_states &lt;- USArrests[1:2, 1:2])
+##         Murder Assault
+## Alabama   13.2     236
+## Alaska    10.0     263
+
+dist(two_states, method = "euclidean")
+##         Alabama
+## Alaska 27.18897
+dist(two_states, method = "manhattan")
+##        Alabama
+## Alaska    30.2
+```
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-4-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Measuring observation distances
+
+.pull-left[
+* classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
+
+* distance measures
+  - .opacity20[Euclidean]
+  - .opacity20[Manhattan]
+  - Correlation-based (i.e. Pearson, Spearman)
+  
+]
+
+.pull-right[
+
+&lt;br&gt;
+&lt;img src="02-unsupervised-learning_files/figure-html/correlation-distance-example-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+--
+
+&lt;br&gt;
+
+.center.bold.blue.font120[.content-box-gray[There are several other distance measures but these are the most common]]
+
+---
+# Measuring observation distances
+
+When to use certain distance measures
+
+* Euclidean
+   - most sensitive to outliers 
+   - outliers can skew clusters giving false interpretation
+   - use if you are relatively certain minimal outliers exists
+* Manhattan
+   - less sensitive to outliers 
+   - use if you want to be more robust to existing outliers
+* Correlation-based 
+   - captures common relationships regardless of magnitude
+   - use if you want to analyze unscaled data where observations may have larger differences in magnitudes but possibly similar behaviors 
+   - i.e. group customers based on purchased quantities (large volume and low volume customers can be in same group if they exhibit common preferences)
+
+&lt;br&gt;
+.center.bold.blue[.content-box-gray[Euclidean is the most commonly used.]]
+
+---
+# *k*-means clustering
+
+
+Basic idea behind k-means clustering consists of defining clusters so that the total intra-cluster variation (known as total .blue[within-cluster variation]) is .blue[minimized]
+
+`$$\underset{C_1, \dots, C_k}{\texttt{minimize}} \bigg\{ \sum^K_{k=1}(W(C_k)) \bigg \}$$`
+
+
+&lt;img src="02-unsupervised-learning_files/figure-html/generated-data-1.png" style="display: block; margin: auto;" /&gt;
+
+.bold.red.center[Tighter clusters = more well defined clusters]
+
+---
+# *k*-means clustering
+
+
+Basic idea behind k-means clustering consists of defining clusters so that the total intra-cluster variation (known as total .blue[within-cluster variation]) is .blue[minimized]
+
+`$$\underset{C_1, \dots, C_k}{\texttt{minimize}} \bigg\{ \sum^K_{k=1} (\texttt{Mean Euclidean Distance}_k )\bigg \}$$`
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-5-1.png" style="display: block; margin: auto;" /&gt;
+
+.bold.red.center[We measure within-cluster variation using our distance measure of choice (i.e. Euclidean, Manhattan)]
+
+---
+# *k*-means algorithm
+
+.pull-left[
+* Unfortunately we cannot evaluate every possible cluster combination because there are almost `\(K^n\)` ways to partition _n_ observations into _K_ clusters
+* Estimate local optimum ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
+   1. .red[randomly] assign each observation to an initial cluster
+   2. iterate until the cluster assignments to changing
+     a. compute cluster centroids  
+     b. reassign each observation to the cluster whose centroid is closest  
+* Do to randomization
+   - we can get slightly different results each try
+   - use several random starts to help converge
+
+]
+
+.pull-right[
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-6-1.png" style="display: block; margin: auto;" /&gt;
+]
+
+---
+# Prepare our data for _k_-means
+
+.pull-left[
+
+1. Rows are observations (individuals) and columns are variables.
+
+2. Any missing value in the data must be removed or estimated.
+
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+
+]
+
+.pull-right[
+
+
+```r
+df &lt;- USArrests %&gt;%
+  drop_na() %&gt;%
+  scale() %&gt;%
+  print()
+##                     Murder     Assault    UrbanPop         Rape
+## Alabama         1.24256408  0.78283935 -0.52090661 -0.003416473
+## Alaska          0.50786248  1.10682252 -1.21176419  2.484202941
+## Arizona         0.07163341  1.47880321  0.99898006  1.042878388
+## Arkansas        0.23234938  0.23086801 -1.07359268 -0.184916602
+## California      0.27826823  1.26281442  1.75892340  2.067820292
+## Colorado        0.02571456  0.39885929  0.86080854  1.864967207
+## Connecticut    -1.03041900 -0.72908214  0.79172279 -1.081740768
+## Delaware       -0.43347395  0.80683810  0.44629400 -0.579946294
+## Florida         1.74767144  1.97077766  0.99898006  1.138966691
+## Georgia         2.20685994  0.48285493 -0.38273510  0.487701523
+## Hawaii         -0.57123050 -1.49704226  1.20623733 -0.110181255
+## Idaho          -1.19113497 -0.60908837 -0.79724965 -0.750769945
+## Illinois        0.59970018  0.93883125  1.20623733  0.295524916
+## Indiana        -0.13500142 -0.69308401 -0.03730631 -0.024769429
+## Iowa           -1.28297267 -1.37704849 -0.58999237 -1.060387812
+## Kansas         -0.41051452 -0.66908525  0.03177945 -0.345063775
+## Kentucky        0.43898421 -0.74108152 -0.93542116 -0.526563903
+## Louisiana       1.74767144  0.93883125  0.03177945  0.103348309
+## Maine          -1.30593210 -1.05306531 -1.00450692 -1.434064548
+## Maryland        0.80633501  1.55079947  0.10086521  0.701231086
+## Massachusetts  -0.77786532 -0.26110644  1.34440885 -0.526563903
+## Michigan        0.99001041  1.01082751  0.58446551  1.480613993
+## Minnesota      -1.16817555 -1.18505846  0.03177945 -0.676034598
+## Mississippi     1.90838741  1.05882502 -1.48810723 -0.441152078
+## Missouri        0.27826823  0.08687549  0.30812248  0.743936999
+## Montana        -0.41051452 -0.74108152 -0.86633540 -0.515887425
+## Nebraska       -0.80082475 -0.82507715 -0.24456358 -0.505210947
+## Nevada          1.01296983  0.97482938  1.06806582  2.644350114
+## New Hampshire  -1.30593210 -1.36504911 -0.65907813 -1.252564419
+## New Jersey     -0.08908257 -0.14111267  1.62075188 -0.259651949
+## New Mexico      0.82929443  1.37080881  0.30812248  1.160319648
+## New York        0.76041616  0.99882813  1.41349461  0.519730957
+## North Carolina  1.19664523  1.99477641 -1.41902147 -0.547916860
+## North Dakota   -1.60440462 -1.50904164 -1.48810723 -1.487446939
+## Ohio           -0.11204199 -0.60908837  0.65355127  0.017936483
+## Oklahoma       -0.27275797 -0.23710769  0.16995096 -0.131534211
+## Oregon         -0.66306820 -0.14111267  0.10086521  0.861378259
+## Pennsylvania   -0.34163624 -0.77707965  0.44629400 -0.676034598
+## Rhode Island   -1.00745957  0.03887798  1.48258036 -1.380682157
+## South Carolina  1.51807718  1.29881255 -1.21176419  0.135377743
+## South Dakota   -0.91562187 -1.01706718 -1.41902147 -0.900240639
+## Tennessee       1.24256408  0.20686926 -0.45182086  0.605142783
+## Texas           1.12776696  0.36286116  0.99898006  0.455672088
+## Utah           -1.05337842 -0.60908837  0.99898006  0.178083656
+## Vermont        -1.28297267 -1.47304350 -2.31713632 -1.071064290
+## Virginia        0.16347111 -0.17711080 -0.17547783 -0.056798864
+## Washington     -0.86970302 -0.30910395  0.51537975  0.530407436
+## West Virginia  -0.47939280 -1.07706407 -1.83353601 -1.273917376
+## Wisconsin      -1.19113497 -1.41304662  0.03177945 -1.113770203
+## Wyoming        -0.22683912 -0.11711392 -0.38273510 -0.601299251
+## attr(,"scaled:center")
+##   Murder  Assault UrbanPop     Rape 
+##    7.788  170.760   65.540   21.232 
+## attr(,"scaled:scale")
+##    Murder   Assault  UrbanPop      Rape 
+##  4.355510 83.337661 14.474763  9.366385
+```
+
+]
+
+---
+# Applying _k_-means
+
+.scrollable90[
+.pull-left[
+
+1. .opacity20[Rows are observations (individuals) and columns are variables.]
+
+2. .opacity20[Any missing value in the data must be removed or estimated.]
+
+3. .opacity20[The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.]
+
+4. Apply `kmeans()`
+]
+
+.pull-right[
+
+
+```r
+k3 &lt;- kmeans(df, centers = 3, nstart = 25)
+
+# tidied output
+broom::tidy(k3)
+## # A tibble: 3 x 7
+##       x1     x2     x3     x4  size withinss cluster
+##    &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;int&gt;    &lt;dbl&gt; &lt;fct&gt;  
+## 1 -0.962 -1.11  -0.930 -0.967    13     12.0 1      
+## 2 -0.447 -0.347  0.479 -0.257    17     19.6 2      
+## 3  1.00   1.01   0.198  0.847    20     46.7 3
+
+# full model output
+glimpse(k3)
+## List of 9
+##  $ cluster     : Named int [1:50] 3 3 3 2 3 3 2 2 3 3 ...
+##   ..- attr(*, "names")= chr [1:50] "Alabama" "Alaska" "Arizona" "Arkansas" ...
+##  $ centers     : num [1:3, 1:4] -0.962 -0.447 1.005 -1.107 -0.347 ...
+##   ..- attr(*, "dimnames")=List of 2
+##   .. ..$ : chr [1:3] "1" "2" "3"
+##   .. ..$ : chr [1:4] "Murder" "Assault" "UrbanPop" "Rape"
+##  $ totss       : num 196
+##  $ withinss    : num [1:3] 12 19.6 46.7
+##  $ tot.withinss: num 78.3
+##  $ betweenss   : num 118
+##  $ size        : int [1:3] 13 17 20
+##  $ iter        : int 2
+##  $ ifault      : int 0
+##  - attr(*, "class")= chr "kmeans"
+```
+
+]
+]
+
+---
+# Interpreting output
+
+
+```r
+as_tibble(df) %&gt;%
+  mutate(
+    cluster = k3$cluster, 
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %&gt;% 
+  gather(Crime, Rate, Murder, Assault, Rape) %&gt;%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class: yourturn
+# How many clusters <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1542340471/4979/thinking.gif?1542340471" style="height:1.25em; width:auto; "/&gt;</span>
+
+.font150.center[But how do we know we specified the right value for _k_?]
+
+&lt;img src="https://media.giphy.com/media/xT5LMXWSmQ5xjWyTpC/giphy.gif" width="95%" height="95%" style="display: block; margin: auto;" /&gt;
+
+---
+# Determining optimal clusters
+
+Three most popular methods for determining the optimal clusters:
+
+1. Elbow method
+
+2. Silhouette method
+
+3. Gap statistic
+
+
+---
+# Determining optimal clusters
+
+.scrollable90[
+.pull-left[
+Three most popular methods for determining the optimal clusters:
+
+1. Elbow method
+
+2. Silhouette method
+
+3. Gap statistic
+
+]
+
+.pull-right[
+
+
+```r
+c("wss", "silhouette", "gap_stat") %&gt;%
+  map(~ fviz_nbclust(df, kmeans, method = .x, k.max = 20, verbose = FALSE))
+## [[1]]
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
+
+```
+## 
+## [[2]]
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-2.png" style="display: block; margin: auto;" /&gt;
+
+```
+## 
+## [[3]]
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-3.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+# Hierarchical clustering
+
+
+---
+# Interpreting dendregram
+
+---
+# Optimal clusters
+
+
+---
+class: center, middle, inverse
+
+# Dimension Reduction via PCA
+
+
+---
+# Finding principal components
+
+
+---
+# Selecting the number of principal components
+
+
+---
+# Insight interpretation
+
+
+---
+# PCA with mixed data
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

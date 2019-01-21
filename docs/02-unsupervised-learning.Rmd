@@ -1,0 +1,528 @@
+---
+title: "Unsupervised Learning"
+author: "Brad Boehmke"
+date: "2019-02-28"
+output:
+  xaringan::moon_reader:
+    css: ["scrollable.css", "mtheme_max.css", "fonts_mtheme_max.css"]
+    self_contained: false
+    lib_dir: libs
+    chakra: libs/remark-latest.min.js
+    nature:
+      ratio: '16:9'
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+    seal: false  
+---
+
+```{r setup, include=FALSE, cache=FALSE}
+# Set global R options
+options(htmltools.dir.version = FALSE, servr.daemon = TRUE)
+
+# Set global knitr chunk options
+knitr::opts_chunk$set(
+  fig.align = "center", 
+  cache = TRUE,
+  error = FALSE,
+  message = FALSE, 
+  warning = FALSE, 
+  collapse = TRUE 
+)
+
+# set ggplot to black and white theme
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+class: clear, center, middle
+
+background-image: url(images/unsupervised-cover.jpg)
+background-position: center
+background-size: contain
+
+<br><br><br><br><br><br><br><br><br>
+.font200.white[Unsupervised Learning]
+
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* .bold[clustering]: reduce the observation space of a data set
+* .bold[dimension reduction]:  reduce the feature space of a data set
+
+```{r cluster-pca, echo=FALSE}
+knitr::include_graphics("images/clustering_vs_pca.jpeg")
+```
+
+
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* .bold[clustering]: reduce the observation space of a data set
+  - _k_-means clustering
+  - hierarchical clustering
+* .bold[dimension reduction]: reduce the feature space of a data set
+  - principal components analysis (PCA)
+  - factor analysis
+  - autoencoders
+* .bold[Generalized low rank models]: a generalization of the clustering & dimension reduction (i.e. matrix factorization)
+
+   
+---
+# Concept
+
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+
+In essence, unsupervised learning is concerned with identifying groups in a data set
+
+* clustering: reduce the observation space of a data set
+  - .bold.blue[_k_-means clustering]
+  - .bold.blue[hierarchical clustering]
+* dimension reduction: reduce the feature space of a data set
+  - .bold.blue[principal components analysis (PCA)]
+  - factor analysis
+* Generalized low rank models: a generalization of the clustering & dimension reduction (i.e. matrix factorization)
+
+<br><br>
+.center.bold.white[.content-box-blue-dark[Today's focus]]
+   
+---
+# Prerequisites
+
+.pull-left[
+
+.center.font120[Packages]
+
+```{r}
+library(factoextra)
+```
+
+]
+
+.pull-right[
+
+.center.font120[Data]
+
+```{r, eval=FALSE}
+USArrests # clustering data
+```
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Clustering]
+
+---
+# Types of clustering
+
+Clustering is a broad set of techniques for ___finding subgroups of observations___ within a data set.
+
+.pull-left[
+
+* .bold[Objective]: we want observations in the same group to be similar and observations in different groups to be dissimilar
+
+* .bold[Use cases:]
+  - customer segmentation
+  - concentration of crime activity
+  - common patient traits
+  - voter profiles
+  
+]
+
+.pull-right[
+
+<br><br>
+```{r cluster-icon, echo=FALSE}
+knitr::include_graphics("images/cluster-icon.jpg")
+```
+
+]
+
+---
+# Types of clustering
+
+Clustering is a broad set of techniques for ___finding subgroups of observations___ within a data set.
+
+.pull-left[
+
+* .bold[Objective]: we want observations in the same group to be similar and observations in different groups to be dissimilar
+
+* .bold[Use cases:]
+  - customer segmentation
+  - concentration of crime activity
+  - common patient traits
+  - voter profiles
+  
+]
+
+.pull-right[
+
+* .bold[Methods]: several clustering algorithms exists:
+  - k-means
+  - hierarchical
+  - partitioning around mediods (PAM)
+  - clustering large applications (CLARA)
+
+]
+
+---
+# Measuring observation distances
+
+.pull-left[
+* classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
+
+* distance measures
+  - Euclidean: $d_{euc}(x,y) = \sqrt{\sum^n_{i=1}(x_i - y_i)^2}$
+  - Manhattan: $d_{man}(x,y) = \sum^n_{i=1}|(x_i - y_i)|$
+
+]
+
+.pull-right[
+
+```{r}
+(two_states <- USArrests[1:2, 1:2])
+
+dist(two_states, method = "euclidean")
+dist(two_states, method = "manhattan")
+```
+```{r, echo=FALSE, fig.height=3}
+p1 <- ggplot(two_states, aes(Assault, Assault)) +
+  geom_point() +
+  geom_line(lty = "dashed") +
+  ggtitle("Euclidean distance")
+  
+
+p2 <- ggplot(two_states, aes(Assault, Assault)) +
+  geom_point() +
+  geom_step(lty = "dashed") +
+  ggtitle("Manhattan distance")
+
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+```
+
+]
+
+---
+# Measuring observation distances
+
+.pull-left[
+* classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
+
+* distance measures
+  - .opacity20[Euclidean]
+  - .opacity20[Manhattan]
+  - Correlation-based (i.e. Pearson, Spearman)
+  
+]
+
+.pull-right[
+
+<br>
+```{r correlation-distance-example, echo=FALSE, fig.height=5}
+# generate data
+corr_ex <- data_frame(
+  v = 1:20,
+  obs_1 = sample(5:7, 20, replace = TRUE),
+  obs_2 = sample(4:10, 20, replace = TRUE)
+) %>%
+  mutate(obs_3 = obs_2 * 2 + sample(0:1, 1))
+
+corr_ex %>%
+  gather(observation, value, obs_1:obs_3) %>%
+  ggplot(aes(v, value, color = observation)) +
+  geom_line() +
+  scale_colour_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  scale_x_continuous("Variable index")
+```
+
+]
+
+--
+
+<br>
+
+.center.bold.blue.font120[.content-box-gray[There are several other distance measures but these are the most common]]
+
+---
+# Measuring observation distances
+
+When to use certain distance measures
+
+* Euclidean
+   - most sensitive to outliers 
+   - outliers can skew clusters giving false interpretation
+   - use if you are relatively certain minimal outliers exists
+* Manhattan
+   - less sensitive to outliers 
+   - use if you want to be more robust to existing outliers
+* Correlation-based 
+   - captures common relationships regardless of magnitude
+   - use if you want to analyze unscaled data where observations may have larger differences in magnitudes but possibly similar behaviors 
+   - i.e. group customers based on purchased quantities (large volume and low volume customers can be in same group if they exhibit common preferences)
+
+<br>
+.center.bold.blue[.content-box-gray[Euclidean is the most commonly used.]]
+
+---
+# *k*-means clustering
+
+
+Basic idea behind k-means clustering consists of defining clusters so that the total intra-cluster variation (known as total .blue[within-cluster variation]) is .blue[minimized]
+
+$$\underset{C_1, \dots, C_k}{\texttt{minimize}} \bigg\{ \sum^K_{k=1}(W(C_k)) \bigg \}$$
+
+
+```{r generated-data, echo=FALSE, fig.height=3.5, fig.width=10}
+# generate data
+create_data <- function(sd) {
+  data_frame(
+    x1 = c(rnorm(100, sd = sd), rnorm(100, sd = sd) + 3),
+    x2 = c(rnorm(100, sd = sd), rnorm(100, sd = sd) - 2)
+  ) %>%
+    mutate(`W(Ck)` = case_when(
+      sd == .5  ~ "Best",
+      sd == .75 ~ "Better",
+      sd == 1   ~ "Good"
+    ))
+}
+
+df <- map(c(.5, .75, 1), create_data)
+
+# compute cluster info
+k2 <- map(df, ~ kmeans(.x[, 1:2], 2, nstart = 20))
+
+# add cluster info and plot
+df <- map2(df, k2, ~ mutate(.x, cluster = .y$cluster)) %>%
+  map2_dfr(k2, ~ inner_join(.x, .y$centers %>% 
+                          as.data.frame() %>% 
+                          mutate(cluster = row_number()), by = "cluster")
+       ) %>%
+  rename(x1 = x1.x, x2 = x2.x, x_center = x1.y, y_center = x2.y) %>%
+  mutate(`W(Ck)` = factor(`W(Ck)`, levels = c("Good", "Better", "Best")))
+
+df %>%
+  ggplot(aes()) +
+  facet_wrap(~ `W(Ck)`) + 
+  geom_point(aes(x_center, y_center), size = 4) +
+  geom_point(aes(x1, x2, colour = factor(cluster)), show.legend = FALSE, alpha = .5) +
+  scale_x_continuous(bquote(X[1]), breaks = NULL, labels = NULL) +
+  scale_y_continuous(bquote(X[2]), breaks = NULL, labels = NULL) +
+  theme(legend.position="none")
+```
+
+.bold.red.center[Tighter clusters = more well defined clusters]
+
+---
+# *k*-means clustering
+
+
+Basic idea behind k-means clustering consists of defining clusters so that the total intra-cluster variation (known as total .blue[within-cluster variation]) is .blue[minimized]
+
+$$\underset{C_1, \dots, C_k}{\texttt{minimize}} \bigg\{ \sum^K_{k=1} (\texttt{Mean Euclidean Distance}_k )\bigg \}$$
+
+```{r, echo=FALSE, fig.height=3.5, fig.width=10}
+df %>%
+  ggplot(aes(colour = factor(cluster))) +
+  facet_wrap(~ `W(Ck)`) +
+  geom_segment(aes(x = x1, xend = x_center, y = x2, yend = y_center), lty = "dashed", alpha = .5) +
+  geom_point(aes(x_center, y_center), size = 4) +
+  geom_point(aes(x1, x2), show.legend = FALSE, alpha = .5) +
+  scale_x_continuous(bquote(X[1]), breaks = NULL, labels = NULL) +
+  scale_y_continuous(bquote(X[2]), breaks = NULL, labels = NULL) +
+  theme(legend.position="none")
+```
+
+.bold.red.center[We measure within-cluster variation using our distance measure of choice (i.e. Euclidean, Manhattan)]
+
+---
+# *k*-means algorithm
+
+.pull-left[
+* Unfortunately we cannot evaluate every possible cluster combination because there are almost $K^n$ ways to partition _n_ observations into _K_ clusters
+* Estimate local optimum ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
+   1. .red[randomly] assign each observation to an initial cluster
+   2. iterate until the cluster assignments to changing
+     a. compute cluster centroids  
+     b. reassign each observation to the cluster whose centroid is closest  
+* Do to randomization
+   - we can get slightly different results each try
+   - use several random starts to help converge
+
+]
+
+.pull-right[
+```{r, echo=FALSE, fig.height=6}
+df <- data_frame(
+    x1 = c(rnorm(100), rnorm(100) + 3),
+    x2 = c(rnorm(100), rnorm(100) - 2)
+)
+
+map(1:6, ~ kmeans(df, 3)) %>%
+  map2_dfr(1:6, ~ df %>% mutate(
+    cluster = .x$cluster,
+    name = paste0("Iteration: ",.y, ";  W(Ck): ", round(.x$tot.withinss, 2))
+    )) %>%
+  ggplot(aes(x1, x2, colour = cluster)) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~ name, nrow = 2)
+```
+]
+
+---
+# Prepare our data for _k_-means
+
+.pull-left[
+
+1. Rows are observations (individuals) and columns are variables.
+
+2. Any missing value in the data must be removed or estimated.
+
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+
+]
+
+.pull-right[
+
+```{r}
+df <- USArrests %>%
+  drop_na() %>%
+  scale() %>%
+  print()
+```
+
+]
+
+---
+# Applying _k_-means
+
+.scrollable90[
+.pull-left[
+
+1. .opacity20[Rows are observations (individuals) and columns are variables.]
+
+2. .opacity20[Any missing value in the data must be removed or estimated.]
+
+3. .opacity20[The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.]
+
+4. Apply `kmeans()`
+]
+
+.pull-right[
+
+```{r}
+k3 <- kmeans(df, centers = 3, nstart = 25)
+
+# tidied output
+broom::tidy(k3)
+
+# full model output
+glimpse(k3)
+```
+
+]
+]
+
+---
+# Interpreting output
+
+```{r, fig.width=15, fig.height=4.25}
+as_tibble(df) %>%
+  mutate(
+    cluster = k3$cluster, 
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %>% 
+  gather(Crime, Rate, Murder, Assault, Rape) %>%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+---
+class: yourturn
+# How many clusters `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1542340471/4979/thinking.gif?1542340471", animate = FALSE, size = 1.25)`
+
+.font150.center[But how do we know we specified the right value for _k_?]
+
+```{r, echo=FALSE, out.height="95%", out.width="95%"}
+knitr::include_graphics("https://media.giphy.com/media/xT5LMXWSmQ5xjWyTpC/giphy.gif")
+```
+
+---
+# Determining optimal clusters
+
+Three most popular methods for determining the optimal clusters:
+
+1. Elbow method
+
+2. Silhouette method
+
+3. Gap statistic
+
+
+---
+# Determining optimal clusters
+
+.scrollable90[
+.pull-left[
+Three most popular methods for determining the optimal clusters:
+
+1. Elbow method
+
+2. Silhouette method
+
+3. Gap statistic
+
+]
+
+.pull-right[
+
+```{r, fig.width=15, fig.height=6}
+c("wss", "silhouette", "gap_stat") %>%
+  map(~ fviz_nbclust(df, kmeans, method = .x, k.max = 20, verbose = FALSE))
+```
+
+]
+]
+
+---
+# Hierarchical clustering
+
+
+---
+# Interpreting dendregram
+
+---
+# Optimal clusters
+
+
+---
+class: center, middle, inverse
+
+# Dimension Reduction via PCA
+
+
+---
+# Finding principal components
+
+
+---
+# Selecting the number of principal components
+
+
+---
+# Insight interpretation
+
+
+---
+# PCA with mixed data
