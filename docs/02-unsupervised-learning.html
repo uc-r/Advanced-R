@@ -5,9 +5,9 @@
     <meta charset="utf-8">
     <meta name="author" content="Brad Boehmke" />
     <meta name="date" content="2019-02-28" />
-    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
     <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
     <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="scrollable.css" type="text/css" />
     <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
     <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
@@ -30,7 +30,7 @@ background-size: contain
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
@@ -43,40 +43,45 @@ In essence, unsupervised learning is concerned with identifying groups in a data
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
 * .bold[clustering]: reduce the observation space of a data set
   - _k_-means clustering
   - hierarchical clustering
+  - spectral clustering
 * .bold[dimension reduction]: reduce the feature space of a data set
   - principal components analysis (PCA)
   - factor analysis
+  - matrix factorization
   - autoencoders
-* .bold[Generalized low rank models]: a generalization of the clustering &amp; dimension reduction (i.e. matrix factorization)
+* .bold[Generalized low rank models]: a generalization of the clustering &amp; dimension reduction
 
    
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( `\(x_1, x_2, \dots, x_p\)` ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
 * clustering: reduce the observation space of a data set
   - .bold.blue[_k_-means clustering]
   - .bold.blue[hierarchical clustering]
+  - spectral clustering
 * dimension reduction: reduce the feature space of a data set
   - .bold.blue[principal components analysis (PCA)]
   - factor analysis
-* Generalized low rank models: a generalization of the clustering &amp; dimension reduction (i.e. matrix factorization)
+  - matrix factorization
+  - autoencoders
+* Generalized low rank models: a generalization of the clustering &amp; dimension reduction
 
-&lt;br&gt;&lt;br&gt;
-.center.bold.white[.content-box-blue-dark[Today's focus]]
+&lt;br&gt;
+.center.bold.white[.content-box-blue-dark[This module's focus]]
    
 ---
-# Prerequisites
+# Prerequisites .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
 
 .pull-left[
 
@@ -84,6 +89,8 @@ In essence, unsupervised learning is concerned with identifying groups in a data
 
 
 ```r
+library(tidyverse)
+library(cluster)
 library(factoextra)
 ```
 
@@ -264,14 +271,15 @@ Basic idea behind k-means clustering consists of defining clusters so that the t
 
 .pull-left[
 * Unfortunately we cannot evaluate every possible cluster combination because there are almost `\(K^n\)` ways to partition _n_ observations into _K_ clusters
-* Estimate local optimum ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
+* Estimate _greedy local optimum_ ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
    1. .red[randomly] assign each observation to an initial cluster
-   2. iterate until the cluster assignments to changing
+   2. iterate until the cluster assignments stop changing  
      a. compute cluster centroids  
      b. reassign each observation to the cluster whose centroid is closest  
 * Do to randomization
    - we can get slightly different results each try
-   - use several random starts to help converge
+   - use several random starts (rule of <span class=" faa-slow animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783" style="height:1em; width:auto; "/&gt;</span>: 20)
+   - algorithm uses iteration with lowest `\(W(C_k)\)`
 
 ]
 
@@ -280,7 +288,7 @@ Basic idea behind k-means clustering consists of defining clusters so that the t
 ]
 
 ---
-# Prepare our data for _k_-means
+# Prepare our data for _k_-means .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
 
 .pull-left[
 
@@ -288,7 +296,10 @@ Basic idea behind k-means clustering consists of defining clusters so that the t
 
 2. Any missing value in the data must be removed or estimated.
 
-3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable. `\(^a\)`
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+`\(^a\)` .font60[In some rare cases you may want to leave data unstandardized.]
 
 ]
 
@@ -296,7 +307,7 @@ Basic idea behind k-means clustering consists of defining clusters so that the t
 
 
 ```r
-df &lt;- USArrests %&gt;%
+crime &lt;- USArrests %&gt;%
   drop_na() %&gt;%
   scale() %&gt;%
   print()
@@ -361,8 +372,10 @@ df &lt;- USArrests %&gt;%
 
 ]
 
+
+
 ---
-# Applying _k_-means
+# Applying _k_-means .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
 
 .scrollable90[
 .pull-left[
@@ -380,7 +393,7 @@ df &lt;- USArrests %&gt;%
 
 
 ```r
-k3 &lt;- kmeans(df, centers = 3, nstart = 25)
+k3 &lt;- kmeans(crime, centers = 3, nstart = 20)
 
 # tidied output
 broom::tidy(k3)
@@ -414,11 +427,11 @@ glimpse(k3)
 ]
 
 ---
-# Interpreting output
+# Interpreting output .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 4]
 
 
 ```r
-as_tibble(df) %&gt;%
+as_tibble(crime) %&gt;%
   mutate(
     cluster = k3$cluster, 
     label = paste0(row.names(USArrests), " (", cluster, ")")
@@ -440,30 +453,36 @@ class: yourturn
 
 &lt;img src="https://media.giphy.com/media/xT5LMXWSmQ5xjWyTpC/giphy.gif" width="95%" height="95%" style="display: block; margin: auto;" /&gt;
 
+
+---
+class: yourturn
+# How many clusters <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1542340471/4979/thinking.gif?1542340471" style="height:1.25em; width:auto; "/&gt;</span>
+
+.font150.center[But how do we know we specified the right value for _k_?]
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
+
+.center.bold[.content-box-gray[What do you notice?]]
+
 ---
 # Determining optimal clusters
 
-Three most popular methods for determining the optimal clusters:
-
-1. Elbow method
-
-2. Silhouette method
-
-3. Gap statistic
+Choice for the number of _K_ clusters depends on the goal:
 
 
----
-# Determining optimal clusters
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>)
 
-.scrollable90[
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1.5em; width:auto; "/&gt;</span>)
+
+--
+
 .pull-left[
-Three most popular methods for determining the optimal clusters:
 
-1. Elbow method
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the `\(W(C_k)\)`)
 
-2. Silhouette method
-
-3. Gap statistic
 
 ]
 
@@ -471,40 +490,552 @@ Three most popular methods for determining the optimal clusters:
 
 
 ```r
-c("wss", "silhouette", "gap_stat") %&gt;%
-  map(~ fviz_nbclust(df, kmeans, method = .x, k.max = 20, verbose = FALSE))
-## [[1]]
+fviz_nbclust(df, kmeans, method = "wss", k.max = 20)
 ```
 
-&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
-
-```
-## 
-## [[2]]
-```
-
-&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-2.png" style="display: block; margin: auto;" /&gt;
-
-```
-## 
-## [[3]]
-```
-
-&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-11-3.png" style="display: block; margin: auto;" /&gt;
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-12-1.png" style="display: block; margin: auto;" /&gt;
 
 ]
+
+---
+# Determining optimal clusters
+
+Choice for the number of _K_ clusters depends on the goal:
+
+
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>)
+
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1.5em; width:auto; "/&gt;</span>)
+
+.pull-left[
+
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the `\(W(C_k)\)`)
+- Gap stat ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
+  - compares `\(\texttt{log}(W(C_k))\)` with with their expected values under null reference distribution of the data
+  - automated way to id "kink"
+  - can ID when optimal _k_ is one
+
+]
+
+.pull-right[
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-13-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Determining optimal clusters
+
+Choice for the number of _K_ clusters depends on the goal:
+
+
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>)
+
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1.5em; width:auto; "/&gt;</span>)
+
+.pull-left[
+
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the `\(W(C_k)\)`)
+- Gap stat ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
+  - compares `\(\texttt{log}(W(C_k))\)` with with their expected values under null reference distribution of the data
+  - automated way to id "kink"
+  - can ID when optimal _k_ is one
+
+]
+
+.pull-right[
+
+
+```r
+fviz_nbclust(df, kmeans, method = "gap_stat", k.max = 20, verbose = FALSE)
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-14-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+class: yourturn
+# Determine optimal clusters .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunks 5 &amp; 6]
+
+.pull-left[
+
+Fill in code chunks 5 &amp; 6 to identify the optimal number of clusters for our crime data.
+
+]
+
+--
+
+.pull-right[
+
+
+```r
+p1 &lt;- fviz_nbclust(crime, kmeans, method = "wss", k.max = 20)
+p2 &lt;- fviz_nbclust(crime, kmeans, method = "gap_stat", k.max = 20, verbose = FALSE)
+gridExtra::grid.arrange(p1, p2)
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-15-1.png" style="display: block; margin: auto;" /&gt;
+
 ]
 
 ---
 # Hierarchical clustering
 
+.pull-left[
+
+- .bold.font120[_k_-means]
+   - Requires _k_ to be predetermined
+   - clusters are not nested
+   
+- .bold.font120[Hierarchical]
+   - Do not require _k_ to be predetermined
+   - clusters can be nested
+   - user must specify measure of _dissimilarity between groups_
+   - results in a .bold[dendrogram]
+]
+
+.pull-right[
+
+&lt;img src="02-unsupervised-learning_files/figure-html/dendrogram-1.png" style="display: block; margin: auto;" /&gt;
+
+]
 
 ---
-# Interpreting dendregram
+# Hierarchical strategies
+
+.pull-left[
+
+- .bold.font120[_k_-means]
+   - Requires _k_ to be predetermined
+   - clusters are not nested
+   
+- .bold.font120[Hierarchical]
+   - Do not require _k_ to be predetermined
+   - clusters can be nested
+   - user must specify measure of _dissimilarity between groups_
+   - results in a .bold[dendrogram]
+   - two main strategies
+     1. Agglomerative nesting (AGNES): bottom up
+     2. Divisive analysis (DIANA): top down
+]
+
+.pull-right[
+
+&lt;img src="images/dendrogram2.png" width="95%" style="display: block; margin: auto;" /&gt;
+
+]
 
 ---
-# Optimal clusters
+# Group clustering strategies
 
+.pull-left[
+
+- .bold[AGNES]
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+      - Single linkage
+      - Complete linkage
+      - Group average linkage
+      - Centroid linkage
+      - Ward's linkage
+   - repeat until all clusters have been merged
+- .bold[DIANA]
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see [Kaufman &amp; Rousseeuw, 1990](https://www.amazon.com/Finding-Groups-Data-Introduction-Analysis/dp/0471735787/ref=sr_1_1?ie=UTF8&amp;qid=1548179235&amp;sr=8-1&amp;keywords=Finding+Groups+in+Data%3A+An+Introduction+to+Cluster+Analysis))
+   - .blue[Pro tip:] used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-16-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - __Single linkage__
+     - Complete linkage
+     - Group average linkage
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman &amp; Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="images/single-linkage.png" width="82%" height="82%" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Merge clusters where the closest two observations have the smallest distance]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - __Complete linkage__
+     - Group average linkage
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman &amp; Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="images/complete-linkage.png" width="82%" height="82%" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Merge clusters where the most distant two observations have the smallest distance]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - __Group average linkage__
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman &amp; Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="images/group-average-linkage.png" width="82%" height="82%" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Merge clusters where the average distance between all observations are smallest]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - Group average linkage
+     - __Centroid linkage__
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman &amp; Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="images/centroid-linkage.png" width="82%" height="82%" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Merge clusters with the smallest distance between their centroids]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - Group average linkage
+     - Centroid linkage
+     - __Ward's linkage__
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman &amp; Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+&lt;img src="images/wards-linkage.png" width="82%" height="82%" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Merge clusters with the smallest between cluster variation]
+
+]
+
+---
+# Comparing AGNES clustering
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage: produces many "loose" clusters
+     - Complete linkage: produces "compact" clusters
+     - Centroid linkage: depends on variability
+     - Group average linkage: balances clusters 
+     - Ward's linkage: balances clusters
+   - repeat until all clusters have been merged
+
+&lt;br&gt;
+
+.center.bold.red[I tend to look for the method that produces more compact clusters]
+
+]
+
+.pull-right[
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-22-1.png" style="display: block; margin: auto;" /&gt;
+]
+
+---
+# Applying hierarchical clustering .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunks 7 &amp; 8]
+
+.pull-left[
+
+
+```r
+# you can use hclust
+option1 &lt;- hclust(dist(crime), method = "average")
+plot(option1)
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-23-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-left[
+
+
+```r
+# or agnes
+option2 &lt;- cluster::agnes(crime, method = "average")
+plot(option2, which = 2)
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-24-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Interpreting the dendrogram
+
+- vertical axis represents distance at fusion
+- 9 &amp; 2 appear close on dendrogram but, in fact, their closeness on the dendrogram imply they are approximately the same distance from obs (5, 7, &amp; 8)
+
+.pull-left[
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-25-1.png" width="80%" height="80%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-26-1.png" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Which method to use? .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 9]
+
+
+The `agnes()` function provides an ___agglomerative coefficent___, which measures the amount of clustering structure found (values closer to 1 suggest strong clustering structure).
+
+.code70[
+
+```r
+# agglomerative coefficent from earlier agnes() model
+option2$ac
+## [1] 0.7379371
+```
+]
+
+--
+
+This allows us to find certain hierarchical clustering methods that can identify stronger clustering structures.
+
+.code70[
+
+```r
+# methods to assess
+m &lt;- c("average", "single", "complete", "ward")
+names(m) &lt;- m
+
+# function to compute coefficient
+ac &lt;- function(x) {
+  cluster::agnes(crime, method = x)$ac
+}
+
+# get agglomerative coefficient for each linkage method
+map_dbl(m, ac)
+##   average    single  complete      ward 
+## 0.7379371 0.6276128 0.8531583 0.9346210
+```
+]
+
+---
+# Which clusters to use? .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunks 10 &amp; 11]
+
+.pull-left[
+
+.center.bold[Visual assessment]
+
+
+```r
+# re-run hc with Ward method
+hc_ward &lt;- cluster::agnes(crime, method = "ward")
+
+# highlight 4 clusters
+plot(hc_ward, which = 2)
+rect.hclust(hc_ward, k = 4, border = 2:5)
+```
+
+&lt;img src="images/hclust-visual-assessment.png" width="1513" style="display: block; margin: auto;" /&gt;
+
+
+
+]
+
+.pull-right[
+
+.center.bold[Elbow method or Gap stat]
+
+
+```r
+# fviz_nbclust can use differen FUNctions
+# see ?fviz_nbclust &amp; ?hcut
+fviz_nbclust(crime, FUN = hcut, method = "gap_stat", verbose = FALSE)
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-31-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Extract results and visualize .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 12]
+
+
+```r
+as_tibble(crime) %&gt;%
+  mutate(
+*   cluster = cutree(hc_ward, k = 3), # use cutree to get clusters
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %&gt;% 
+  gather(Crime, Rate, Murder, Assault, Rape) %&gt;%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+&lt;img src="02-unsupervised-learning_files/figure-html/unnamed-chunk-32-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Ohio's cluster .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunks 13]
+
+
+
+.bold[Common states between _k_-means and Hierarchical clustering]
+
+
+```
+##  [1] "Arkansas"      "Connecticut"   "Delaware"      "Hawaii"       
+##  [5] "Indiana"       "Kansas"        "Massachusetts" "New Jersey"   
+##  [9] "Ohio"          "Oklahoma"      "Oregon"        "Pennsylvania" 
+## [13] "Rhode Island"  "Utah"          "Virginia"      "Washington"   
+## [17] "Wyoming"
+```
+
+.bold[Different states between _k_-means and Hierarchical clustering]
+
+
+```
+## [1] "Kentucky" "Missouri"
+```
+
+---
+# Final Thoughts 
+
+.pull-left[
+
+.center.bold[What to remember]
+
+- We measure differences between obs with
+   - Euclidean distance
+   - Manhattan distance
+   - Correlation-based distances
+- Data prep
+   - clean &amp; standardize data
+- _k_-means
+   - minimizes within cluster variance
+   - find optimal clusters w/elbow &amp; Gap stat
+- Hierarchical
+   - AGNES vs DIANA
+   - Many ways to merge clusters
+   - Use method that produces compact clusters
+]
+
+.pull-right[
+
+.center.bold[What to learn]
+
+- Many more methods exist
+   - `daisy()`: compute distance measures for mixed data
+   - `pam()`: medoid clustering
+   - `clara()`: big data clustering
+   - `diana()`: Devisive hierarchical clustering
+- Great resources
+   - [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/)
+   - [Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/)
+   - [Practical Guide to Cluster Analysis in R](https://www.amazon.com/Practical-Guide-Cluster-Analysis-Unsupervised/dp/1542462703)
+   - [Finding Groups in Data](https://www.amazon.com/Finding-Groups-Data-Introduction-Analysis/dp/0471735787)
+
+]
 
 ---
 class: center, middle, inverse

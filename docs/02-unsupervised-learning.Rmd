@@ -47,7 +47,7 @@ background-size: contain
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
@@ -62,46 +62,53 @@ knitr::include_graphics("images/clustering_vs_pca.jpeg")
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
 * .bold[clustering]: reduce the observation space of a data set
   - _k_-means clustering
   - hierarchical clustering
+  - spectral clustering
 * .bold[dimension reduction]: reduce the feature space of a data set
   - principal components analysis (PCA)
   - factor analysis
+  - matrix factorization
   - autoencoders
-* .bold[Generalized low rank models]: a generalization of the clustering & dimension reduction (i.e. matrix factorization)
+* .bold[Generalized low rank models]: a generalization of the clustering & dimension reduction
 
    
 ---
 # Concept
 
-___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) but do not contain a response variable (*Y*).
+___Unsupervised learning___: a set of statistical tools to better understand *n* observations that contain a set of features ( $x_1, x_2, \dots, x_p$ ) without being guided by a response variable (*Y*).
 
 In essence, unsupervised learning is concerned with identifying groups in a data set
 
 * clustering: reduce the observation space of a data set
   - .bold.blue[_k_-means clustering]
   - .bold.blue[hierarchical clustering]
+  - spectral clustering
 * dimension reduction: reduce the feature space of a data set
   - .bold.blue[principal components analysis (PCA)]
   - factor analysis
-* Generalized low rank models: a generalization of the clustering & dimension reduction (i.e. matrix factorization)
+  - matrix factorization
+  - autoencoders
+* Generalized low rank models: a generalization of the clustering & dimension reduction
 
-<br><br>
-.center.bold.white[.content-box-blue-dark[Today's focus]]
+<br>
+.center.bold.white[.content-box-blue-dark[This module's focus]]
    
 ---
-# Prerequisites
+# Prerequisites .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
 .pull-left[
 
 .center.font120[Packages]
 
 ```{r}
+library(tidyverse)
+library(cluster)
 library(factoextra)
 ```
 
@@ -349,14 +356,15 @@ df %>%
 
 .pull-left[
 * Unfortunately we cannot evaluate every possible cluster combination because there are almost $K^n$ ways to partition _n_ observations into _K_ clusters
-* Estimate local optimum ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
+* Estimate _greedy local optimum_ ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](https://www.jstor.org/stable/pdf/2346830.pdf?casa_token=DyTW0ZLNC4gAAAAA:VNX2TGwDfcs5foMa96ZxnOM2mjaQU1WuCOLL8qF6iDBWp6ClU8-i2-OSXKbtO1uHm6_1oda_2egpvgYCvaix8UxUqUryqZj-Pw3G4m771Ev5-4kL46Y))
    1. .red[randomly] assign each observation to an initial cluster
-   2. iterate until the cluster assignments to changing
+   2. iterate until the cluster assignments stop changing  
      a. compute cluster centroids  
      b. reassign each observation to the cluster whose centroid is closest  
 * Do to randomization
    - we can get slightly different results each try
-   - use several random starts to help converge
+   - use several random starts (rule of `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783", animate = "slow")`: 20)
+   - algorithm uses iteration with lowest $W(C_k)$
 
 ]
 
@@ -379,7 +387,7 @@ map(1:6, ~ kmeans(df, 3)) %>%
 ]
 
 ---
-# Prepare our data for _k_-means
+# Prepare our data for _k_-means .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
 
 .pull-left[
 
@@ -387,14 +395,17 @@ map(1:6, ~ kmeans(df, 3)) %>%
 
 2. Any missing value in the data must be removed or estimated.
 
-3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable. $^a$
+
+<br><br><br><br><br>
+$^a$ .font60[In some rare cases you may want to leave data unstandardized.]
 
 ]
 
 .pull-right[
 
 ```{r}
-df <- USArrests %>%
+crime <- USArrests %>%
   drop_na() %>%
   scale() %>%
   print()
@@ -402,8 +413,10 @@ df <- USArrests %>%
 
 ]
 
+
+
 ---
-# Applying _k_-means
+# Applying _k_-means .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
 
 .scrollable90[
 .pull-left[
@@ -420,7 +433,7 @@ df <- USArrests %>%
 .pull-right[
 
 ```{r}
-k3 <- kmeans(df, centers = 3, nstart = 25)
+k3 <- kmeans(crime, centers = 3, nstart = 20)
 
 # tidied output
 broom::tidy(k3)
@@ -433,10 +446,10 @@ glimpse(k3)
 ]
 
 ---
-# Interpreting output
+# Interpreting output .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4]
 
 ```{r, fig.width=15, fig.height=4.25}
-as_tibble(df) %>%
+as_tibble(crime) %>%
   mutate(
     cluster = k3$cluster, 
     label = paste0(row.names(USArrests), " (", cluster, ")")
@@ -458,53 +471,721 @@ class: yourturn
 knitr::include_graphics("https://media.giphy.com/media/xT5LMXWSmQ5xjWyTpC/giphy.gif")
 ```
 
+
+---
+class: yourturn
+# How many clusters `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1542340471/4979/thinking.gif?1542340471", animate = FALSE, size = 1.25)`
+
+.font150.center[But how do we know we specified the right value for _k_?]
+
+```{r, echo=FALSE, fig.height=5.5, fig.width=12}
+df <- data_frame(
+    x1 = c(rnorm(100), rnorm(100) + 3),
+    x2 = c(rnorm(100), rnorm(100) - 2)
+)
+
+map2(1:6, 2:7, ~ kmeans(df, .y)) %>%
+  map2_dfr(2:7, ~ df %>% mutate(
+    cluster = .x$cluster,
+    name = paste0("Clusters: ",.y, ";  W(Ck): ", round(.x$tot.withinss, 2))
+    )) %>%
+  ggplot(aes(x1, x2, colour = factor(cluster))) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~ name, nrow = 2)
+```
+
+.center.bold[.content-box-gray[What do you notice?]]
+
 ---
 # Determining optimal clusters
 
-Three most popular methods for determining the optimal clusters:
-
-1. Elbow method
-
-2. Silhouette method
-
-3. Gap statistic
+Choice for the number of _K_ clusters depends on the goal:
 
 
----
-# Determining optimal clusters
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870", animate = FALSE)`)
 
-.scrollable90[
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885", animate = FALSE, size = 1.5)`)
+
+--
+
 .pull-left[
-Three most popular methods for determining the optimal clusters:
 
-1. Elbow method
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the $W(C_k)$)
 
-2. Silhouette method
-
-3. Gap statistic
 
 ]
 
 .pull-right[
 
-```{r, fig.width=15, fig.height=6}
-c("wss", "silhouette", "gap_stat") %>%
-  map(~ fviz_nbclust(df, kmeans, method = .x, k.max = 20, verbose = FALSE))
+```{r, fig.height=3}
+fviz_nbclust(df, kmeans, method = "wss", k.max = 20)
 ```
 
 ]
+
+---
+# Determining optimal clusters
+
+Choice for the number of _K_ clusters depends on the goal:
+
+
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870", animate = FALSE)`)
+
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885", animate = FALSE, size = 1.5)`)
+
+.pull-left[
+
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the $W(C_k)$)
+- Gap stat ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
+  - compares $\texttt{log}(W(C_k))$ with with their expected values under null reference distribution of the data
+  - automated way to id "kink"
+  - can ID when optimal _k_ is one
+
+]
+
+.pull-right[
+
+```{r, fig.height=4, echo=FALSE}
+set.seed(123)
+gap_stat <- cluster::clusGap(df, FUN = kmeans, nstart = 20, K.max = 20, B = 50, verbose = FALSE)
+biggest <- which.max(gap_stat$Tab[, "gap"])
+
+as.data.frame(gap_stat$Tab[, c("logW", "E.logW")]) %>%
+  mutate(clusters = 1:20) %>%
+  gather(Stat, value, -clusters) %>%
+  ggplot(aes(clusters, value, color = Stat)) +
+    geom_rect(aes(xmin = 1.75, xmax = 2.25, 
+                  ymin = gap_stat$Tab[, "logW"][biggest]-.1, ymax = gap_stat$Tab[, "E.logW"][biggest]+.1), 
+              fill = "gray90",
+              colour = "gray90",
+              alpha = .25,
+              size = .25) +
+    geom_point() +
+    geom_line() +
+    scale_x_continuous(breaks = 1:20) +
+  theme(
+    legend.position = c(0.9, 0.85),
+    legend.background=element_blank()
+    )
+```
+
+]
+
+---
+# Determining optimal clusters
+
+Choice for the number of _K_ clusters depends on the goal:
+
+
+- .bold.font120[Deterministic resource allocation]: a company may employ *k* sales people, and the goal is to partition customers into one of the _k_ segments. (_k_ is predetermined: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870", animate = FALSE)`)
+
+
+- .bold.font120[Descriptive understanding]: *k* is unknown and the goal is to ascertain what natural distinct groupings exist in the data (you need to determine _k_: `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885", animate = FALSE, size = 1.5)`)
+
+.pull-left[
+
+- Elbow heuristic:
+  - monotonic decreasing
+  - Most common approach (looks for the kink in the $W(C_k)$)
+- Gap stat ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
+  - compares $\texttt{log}(W(C_k))$ with with their expected values under null reference distribution of the data
+  - automated way to id "kink"
+  - can ID when optimal _k_ is one
+
+]
+
+.pull-right[
+
+```{r, fig.height=3}
+fviz_nbclust(df, kmeans, method = "gap_stat", k.max = 20, verbose = FALSE)
+```
+
+]
+
+---
+class: yourturn
+# Determine optimal clusters .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunks 5 & 6]
+
+.pull-left[
+
+Fill in code chunks 5 & 6 to identify the optimal number of clusters for our crime data.
+
+]
+
+--
+
+.pull-right[
+
+```{r fig.height=6}
+p1 <- fviz_nbclust(crime, kmeans, method = "wss", k.max = 20)
+p2 <- fviz_nbclust(crime, kmeans, method = "gap_stat", k.max = 20, verbose = FALSE)
+gridExtra::grid.arrange(p1, p2)
+```
+
 ]
 
 ---
 # Hierarchical clustering
 
+.pull-left[
+
+- .bold.font120[_k_-means]
+   - Requires _k_ to be predetermined
+   - clusters are not nested
+   
+- .bold.font120[Hierarchical]
+   - Do not require _k_ to be predetermined
+   - clusters can be nested
+   - user must specify measure of _dissimilarity between groups_
+   - results in a .bold[dendrogram]
+]
+
+.pull-right[
+
+```{r dendrogram, echo=FALSE}
+# Dissimilarity matrix
+d <- dist(crime, method = "euclidean")
+
+# Hierarchical clustering using Complete Linkage
+hc1 <- hclust(d, method = "complete" )
+
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1, xlab = "", sub = "")
+```
+
+]
 
 ---
-# Interpreting dendregram
+# Hierarchical strategies
+
+.pull-left[
+
+- .bold.font120[_k_-means]
+   - Requires _k_ to be predetermined
+   - clusters are not nested
+   
+- .bold.font120[Hierarchical]
+   - Do not require _k_ to be predetermined
+   - clusters can be nested
+   - user must specify measure of _dissimilarity between groups_
+   - results in a .bold[dendrogram]
+   - two main strategies
+     1. Agglomerative nesting (AGNES): bottom up
+     2. Divisive analysis (DIANA): top down
+]
+
+.pull-right[
+
+```{r dendrogram2, echo=FALSE, out.width="95%"}
+
+knitr::include_graphics("images/dendrogram2.png")
+```
+
+]
 
 ---
-# Optimal clusters
+# Group clustering strategies
 
+.pull-left[
+
+- .bold[AGNES]
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+      - Single linkage
+      - Complete linkage
+      - Group average linkage
+      - Centroid linkage
+      - Ward's linkage
+   - repeat until all clusters have been merged
+- .bold[DIANA]
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see [Kaufman & Rousseeuw, 1990](https://www.amazon.com/Finding-Groups-Data-Introduction-Analysis/dp/0471735787/ref=sr_1_1?ie=UTF8&qid=1548179235&sr=8-1&keywords=Finding+Groups+in+Data%3A+An+Introduction+to+Cluster+Analysis))
+   - .blue[Pro tip:] used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, fig.height=6, fig.width=6}
+df1 <- data_frame(
+    group = "A",
+    x = rnorm(20, sd = .75),
+    y = rnorm(20, sd = .75)
+)
+
+df2 <- data_frame(
+    group = "B",
+    x = rnorm(20, sd = .75) + 3,
+    y = rnorm(20, sd = .75) - 2
+)
+
+df3 <- data_frame(
+    group = "C",
+    x = rnorm(20, sd = .75),
+    y = rnorm(20, sd = .75) -3
+)
+
+df <- df1 %>%
+  rbind(df2) %>%
+  rbind(df3)
+
+k3 <- kmeans(df[, c("x", "y")], 3, nstart = 20)
+centers <- as.data.frame(k3$centers) %>% 
+  mutate(cluster = row_number()) %>% 
+  rename(x_center = "x", y_center = "y")
+
+df <- df %>%
+  mutate(cluster = k3$cluster) %>%
+  inner_join(centers, by = "cluster")
+
+ggplot(df, aes(x, y, colour = cluster)) +
+  geom_point(show.legend = FALSE) +
+  geom_label(aes(x_center, y_center, label = group), size = 5, show.legend = FALSE) +
+  ggtitle("")
+  
+```
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - __Single linkage__
+     - Complete linkage
+     - Group average linkage
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman & Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="82%", out.width="82%"}
+knitr::include_graphics("images/single-linkage.png")
+```
+
+.center.bold.red[Merge clusters where the closest two observations have the smallest distance]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - __Complete linkage__
+     - Group average linkage
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman & Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="82%", out.width="82%"}
+knitr::include_graphics("images/complete-linkage.png")
+```
+
+.center.bold.red[Merge clusters where the most distant two observations have the smallest distance]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - __Group average linkage__
+     - Centroid linkage
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman & Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="82%", out.width="82%"}
+knitr::include_graphics("images/group-average-linkage.png")
+```
+
+.center.bold.red[Merge clusters where the average distance between all observations are smallest]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - Group average linkage
+     - __Centroid linkage__
+     - Ward's linkage
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman & Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="82%", out.width="82%"}
+knitr::include_graphics("images/centroid-linkage.png")
+```
+
+.center.bold.red[Merge clusters with the smallest distance between their centroids]
+
+]
+
+---
+# Group clustering strategies
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage
+     - Complete linkage
+     - Group average linkage
+     - Centroid linkage
+     - __Ward's linkage__
+   - repeat until all clusters have been merged
+- DIANA
+   - start with all obs in one cluster
+   - iteratively divide one cluster into two daughter clusters
+   - uses a dissimiliarity matrix (see Kaufman & Rousseeuw, 1990)
+   - Pro tip: used if focused on relatively small number of clusters
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="82%", out.width="82%"}
+knitr::include_graphics("images/wards-linkage.png")
+```
+
+.center.bold.red[Merge clusters with the smallest between cluster variation]
+
+]
+
+---
+# Comparing AGNES clustering
+
+.pull-left[
+
+- AGNES
+   - start with individual observation clusters
+   - merge closest two clusters based on:
+     - Single linkage: produces many "loose" clusters
+     - Complete linkage: produces "compact" clusters
+     - Centroid linkage: depends on variability
+     - Group average linkage: balances clusters 
+     - Ward's linkage: balances clusters
+   - repeat until all clusters have been merged
+
+<br>
+
+.center.bold.red[I tend to look for the method that produces more compact clusters]
+
+]
+
+.pull-right[
+```{r, echo=FALSE}
+d <- dist(crime)
+
+par(mfrow = c(2, 3))
+
+# multiple plots
+hclust(d, method = "single") %>% 
+  plot(main = "Single Linkage", cex = 0.6, hang = -1, xlab = "", sub = "", labels = FALSE)
+
+hclust(d, method = "complete") %>% 
+  plot(main = "Complete Linkage", cex = 0.6, hang = -1, xlab = "", sub = "", labels = FALSE)
+
+hclust(d, method = "centroid") %>% 
+  plot(main = "Centroid Linkage", cex = 0.6, hang = -1, xlab = "", sub = "", labels = FALSE)
+
+hclust(d, method = "average") %>% 
+  plot(main = "Average Linkage", cex = 0.6, hang = -1, xlab = "", sub = "", labels = FALSE)
+
+hclust(d, method = "ward.D") %>% 
+  plot(main = "Ward's Linkage", cex = 0.6, hang = -1, xlab = "", sub = "", labels = FALSE)
+```
+]
+
+---
+# Applying hierarchical clustering .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunks 7 & 8]
+
+.pull-left[
+
+```{r}
+# you can use hclust
+option1 <- hclust(dist(crime), method = "average")
+plot(option1)
+```
+
+]
+
+.pull-left[
+
+```{r}
+# or agnes
+option2 <- cluster::agnes(crime, method = "average")
+plot(option2, which = 2)
+```
+
+]
+
+---
+# Interpreting the dendrogram
+
+- vertical axis represents distance at fusion
+- 9 & 2 appear close on dendrogram but, in fact, their closeness on the dendrogram imply they are approximately the same distance from obs (5, 7, & 8)
+
+.pull-left[
+```{r, echo=FALSE, out.height="80%", out.width="80%"}
+df <- data.frame(
+  x1 = c(-1.5, -1.3, -.9, -.6, .1, .1, .6, 1.2, 1.4),
+  x2 = c(-.4, -1.5, -1.2, -1, -1.1, .6, -.2, -.5, -.3),
+  label = c(3, 4, 6, 1, 2, 9, 8, 5, 7)
+)
+
+ggplot(df, aes(x1, x2, label = label)) +
+  geom_label()
+```
+]
+
+.pull-right[
+
+```{r, echo=FALSE, out.height="90%", out.width="90%"}
+df <- data.frame(
+  x1 = c(-1.5, -1.3, -.9, -.6, .1, .1, .6, 1.2, 1.4),
+  x2 = c(-.4, -1.5, -1.2, -1, -1.1, .6, -.2, -.5, -.3),
+  row.names = c(3, 4, 6, 1, 2, 9, 8, 5, 7)
+)
+
+hclust(dist(df)) %>% plot()
+```
+
+]
+
+---
+# Which method to use? .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 9]
+
+
+The `agnes()` function provides an ___agglomerative coefficent___, which measures the amount of clustering structure found (values closer to 1 suggest strong clustering structure).
+
+.code70[
+```{r}
+# agglomerative coefficent from earlier agnes() model
+option2$ac
+```
+]
+
+--
+
+This allows us to find certain hierarchical clustering methods that can identify stronger clustering structures.
+
+.code70[
+```{r}
+# methods to assess
+m <- c("average", "single", "complete", "ward")
+names(m) <- m
+
+# function to compute coefficient
+ac <- function(x) {
+  cluster::agnes(crime, method = x)$ac
+}
+
+# get agglomerative coefficient for each linkage method
+map_dbl(m, ac)
+```
+]
+
+---
+# Which clusters to use? .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunks 10 & 11]
+
+.pull-left[
+
+.center.bold[Visual assessment]
+
+```{r, eval=FALSE}
+# re-run hc with Ward method
+hc_ward <- cluster::agnes(crime, method = "ward")
+
+# highlight 4 clusters
+plot(hc_ward, which = 2)
+rect.hclust(hc_ward, k = 4, border = 2:5)
+```
+
+```{r, echo=FALSE}
+hc_ward <- cluster::agnes(crime, method = "ward")
+knitr::include_graphics("images/hclust-visual-assessment.png")
+```
+
+
+
+]
+
+.pull-right[
+
+.center.bold[Elbow method or Gap stat]
+
+```{r, fig.height=5}
+# fviz_nbclust can use differen FUNctions
+# see ?fviz_nbclust & ?hcut
+fviz_nbclust(crime, FUN = hcut, method = "gap_stat", verbose = FALSE)
+```
+
+]
+
+---
+# Extract results and visualize .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 12]
+
+```{r, fig.width=15, fig.height=4.25}
+as_tibble(crime) %>%
+  mutate(
+    cluster = cutree(hc_ward, k = 3), # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %>% 
+  gather(Crime, Rate, Murder, Assault, Rape) %>%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+---
+# Ohio's cluster .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunks 13]
+
+```{r, echo=FALSE}
+# get ohio neighbors with k-means
+df_kmeans <- as_tibble(crime) %>%
+  mutate(
+    cluster = kmeans(crime, 3, nstart = 20)$cluster, # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests))
+    )
+
+ohio_cluster <- filter(df_kmeans, label == "Ohio") %>% pull(cluster)
+
+kmean_friends <- df_kmeans %>%
+  filter(cluster == ohio_cluster) %>%
+  arrange() %>%
+  pull(label)
+
+# get ohio neighbors with hierarchical
+df_hc <- as_tibble(crime) %>%
+  mutate(
+    cluster = cutree(hc_ward, k = 3), # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests))
+    )
+
+ohio_cluster <- filter(df_hc, label == "Ohio") %>% pull(cluster)
+
+hcut_friends <- df_hc %>%
+  filter(cluster == ohio_cluster) %>%
+  arrange() %>%
+  pull(label)
+```
+
+.bold[Common states between _k_-means and Hierarchical clustering]
+
+```{r, echo=FALSE}
+# same
+intersect(hcut_friends, kmean_friends)
+```
+
+.bold[Different states between _k_-means and Hierarchical clustering]
+
+```{r, echo=FALSE}
+# differences
+setdiff(union(hcut_friends, kmean_friends), intersect(hcut_friends, kmean_friends))
+```
+
+---
+# Final Thoughts 
+
+.pull-left[
+
+.center.bold[What to remember]
+
+- We measure differences between obs with
+   - Euclidean distance
+   - Manhattan distance
+   - Correlation-based distances
+- Data prep
+   - clean & standardize data
+- _k_-means
+   - minimizes within cluster variance
+   - find optimal clusters w/elbow & Gap stat
+- Hierarchical
+   - AGNES vs DIANA
+   - Many ways to merge clusters
+   - Use method that produces compact clusters
+]
+
+.pull-right[
+
+.center.bold[What to learn]
+
+- Many more methods exist
+   - `daisy()`: compute distance measures for mixed data
+   - `pam()`: medoid clustering
+   - `clara()`: big data clustering
+   - `diana()`: Devisive hierarchical clustering
+- Great resources
+   - [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/)
+   - [Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/)
+   - [Practical Guide to Cluster Analysis in R](https://www.amazon.com/Practical-Guide-Cluster-Analysis-Unsupervised/dp/1542462703)
+   - [Finding Groups in Data](https://www.amazon.com/Finding-Groups-Data-Introduction-Analysis/dp/0471735787)
+
+]
 
 ---
 class: center, middle, inverse

@@ -11,3 +11,6 @@ forcats
 bindrcpp
 shiny
 factoextra
+knitr
+kableExtra
+cluster
