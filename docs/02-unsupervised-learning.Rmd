@@ -107,9 +107,9 @@ In essence, unsupervised learning is concerned with identifying groups in a data
 .center.font120[Packages]
 
 ```{r}
-library(tidyverse)
-library(cluster)
-library(factoextra)
+library(tidyverse)   # data munging & visualization
+library(cluster)     # additional clustering techniques
+library(factoextra)  # clustering & PCA visualizations
 ```
 
 ]
@@ -119,7 +119,8 @@ library(factoextra)
 .center.font120[Data]
 
 ```{r, eval=FALSE}
-USArrests # clustering data
+USArrests                 # primary example data
+AmesHousing::make_ames()  # a few additional examples
 ```
 
 ]
@@ -1192,18 +1193,648 @@ class: center, middle, inverse
 
 # Dimension Reduction via PCA
 
+---
+# Motivation
+
+PCA ___reduces the dimensionality of a feature set___.
+
+.pull-left[
+
+* .bold[Objective]:  explain the variability of our feature set using fewer variables than the original data set.
+
+* .bold[Use cases:]
+  - descriptive: explaining common feature attributes
+     - customer profiling
+     - student profiling
+     - recidivism profiling
+     - &lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar; profiling
+  - predictive: feature engineering for downstream modeling
+     - reducing noise
+     - minimizing multicollinearity
+  
+]
+
+.pull-right[
+
+<br>
+```{r pca-icon, echo=FALSE}
+knitr::include_graphics("images/pca-icon.jpg")
+```
+
+]
+
+---
+# Motivation
+
+PCA ___reduces the dimensionality of a feature set___.
+
+.pull-left[
+
+* .opacity20[Objective:  explain the variability of our feature set using fewer variables than the original data set.]
+
+* .opacity20[Use cases:]
+  - descriptive: explaining common feature attributes
+     - customer profiling
+     - student profiling
+     - recidivism profiling
+     - &lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar;&lowbar; profiling
+  - .opacity20[predictive: feature engineering for downstream modeling]
+  
+]
+
+.pull-right[
+
+```{r example-pca, echo=FALSE, fig.height=6}
+pca_result <- prcomp(crime)
+pca_result$rotation <- -pca_result$rotation
+pca_result$x <- -pca_result$x
+fviz_pca(pca_result, alpha.ind = .5, labelsize = 3, repel = TRUE)
+```
+
+]
+
+---
+# Motivation
+
+PCA ___reduces the dimensionality of a feature set___.
+
+.pull-left[
+
+* .opacity20[Objective:  explain the variability of our feature set using fewer variables than the original data set.]
+
+* .opacity20[Use cases:]
+  - .opacity20[descriptive: explaining common feature attributes]
+     <br><br><br><br><br>
+  - predictive: feature engineering for downstream modeling
+     - reducing noise
+     - minimizing multicollinearity
+  
+]
+
+.pull-right[
+
+
+```{r example-pca2, echo=FALSE, fig.height=5}
+ames <- AmesHousing::make_ames()
+p1 <- lm(Sale_Price ~ ., data = ames) %>%
+  summary() %>%
+  broom::tidy() %>%
+  filter(term %in% c("Garage_Area", "Garage_Cars")) %>%
+  select(term, estimate) %>%
+  mutate(model = "Both variables in model")
+
+
+p2 <- lm(Sale_Price ~ Garage_Area, data = ames) %>%
+  summary() %>%
+  broom::tidy() %>%
+  filter(term == "Garage_Area") %>%
+  select(term, estimate) %>%
+  mutate(model = "Just Garage_Area")
+
+p3 <- lm(Sale_Price ~ Garage_Cars, data = ames) %>%
+  summary() %>%
+  broom::tidy() %>%
+  filter(term == "Garage_Cars") %>%
+  select(term, estimate) %>%
+  mutate(model = "Just Garage_Cars")
+
+do.call(rbind, list(p1, p2, p3)) %>%
+  ggplot(aes(term, estimate)) +
+  facet_wrap(~ model) +
+  geom_col() +
+  scale_y_log10("Coefficient estimate", labels = scales::comma) +
+  xlab("Predictor variable") +
+  ggtitle("OLS regression models with two highly correlated variables (r = 0.89)")
+  
+```
+
+]
 
 ---
 # Finding principal components
 
+.pull-left[
+
+The *first principal component* of a data set $X_1$, $X_2$, ..., $X_p$ is the linear combination of the features
+
+$$Z_{1} = \phi_{11}X_{1} + \phi_{21}X_{2} + ... + \phi_{p1}X_{p}$$
+
+that has the largest variance. We refer to $\phi_{11}, \dots, \phi_{n1}$ as the _loadings_ of the first principal component.
+
+We can find the second principal component $Z_2$ by identifying the linear combination of $X_1,\dots , X_p$ that has maximal variance out of all linear combinations that are __*uncorrelated*__ with $Z_1$.
+
+]
+
+--
+
+.pull-right[
+
+```{r pca-confused, echo=FALSE}
+knitr::include_graphics("https://gifimage.net/wp-content/uploads/2017/10/how-do-you-say-gif-9.gif")
+```
+
+.center.bold.red[Do you prefer pictures?]
+
+]
+
+---
+# Finding principal components
+
+.pull-left[
+
+The *first principal component* of a data set $X_1$, $X_2$, ..., $X_p$ is the linear combination of the features
+
+$$Z_{1} = \phi_{11}X_{1} + \phi_{21}X_{2} + ... + \phi_{p1}X_{p}$$
+
+that has the largest variance. We refer to $\phi_{11}, \dots, \phi_{n1}$ as the _loadings_ of the first principal component.
+
+We can find the second principal component $Z_2$ by identifying the linear combination of $X_1,\dots , X_p$ that has maximal variance out of all linear combinations that are __*uncorrelated*__ with $Z_1$.
+
+]
+
+.pull-right[
+
+```{r create-pca-image, echo=FALSE, fig.width=6, fig.height=5}
+df <- ames %>%
+  select(var1 = First_Flr_SF, var2 = Gr_Liv_Area) %>%
+  filter(var1 != var2) %>%
+  mutate_all(log) %>%
+  scale() %>% 
+  data.frame() %>%
+  filter(var1 < 4)
+
+ggplot(df, aes(var1, var2)) +
+  geom_jitter(alpha = .25, color = "dodgerblue") +
+  geom_segment(
+    aes(x = 0, xend = 1.5 , y = 0, yend = 1.5),
+    arrow = arrow(length = unit(0.3,"cm")), size = 1.25, color = "black"
+    ) +
+  annotate("text", x = .5, y = .2, label = "First principal component", size = 5, hjust = 0) +
+  annotate("text", x = -3.5, y = .8, label = "Second principal component", size = 5, hjust = 0) +
+  geom_segment(
+    aes(x = 0, xend = -0.25 , y = 0, yend = .5),
+    arrow = arrow(length = unit(0.3,"cm")), size = 1.25, color = "black"
+    ) +
+  xlab(bquote(X[1])) +
+  ylab(bquote(X[2])) +
+  theme_bw()
+```
+
+]
+
+---
+# Finding principal components
+
+.pull-left[
+
+The *first principal component* of a data set $X_1$, $X_2$, ..., $X_p$ is the linear combination of the features
+
+$$Z_{1} = \phi_{11}X_{1} + \phi_{21}X_{2} + ... + \phi_{p1}X_{p}$$
+
+that has the largest variance. We refer to $\phi_{11}, \dots, \phi_{n1}$ as the _loadings_ of the first principal component.
+
+We can find the second principal component $Z_2$ by identifying the linear combination of $X_1,\dots , X_p$ that has maximal variance out of all linear combinations that are __*uncorrelated*__ with $Z_1$.
+
+]
+
+.pull-right[
+
+```{r create-3D-pca-image, echo=FALSE, eval=FALSE}
+df <- ames %>%
+  select(var1 = First_Flr_SF, var2 = Gr_Liv_Area, var3 = TotRms_AbvGrd) %>%
+  filter(var1 != var2) %>%
+  mutate_at(vars(var1, var2), log)
+
+library(pca3d)
+pca <- prcomp(df, scale = FALSE)
+pca3d(pca)
+#snapshotPCA3d(file="3D-PCA.png")
+```
+
+```{r pca-3d-plot, echo=FALSE}
+knitr::include_graphics("images/3D-PCA.png")
+```
+
+<br>
+
+.right.font50[Made with pca3d package]
+
+]
+
+---
+# Prepare our data for PCA
+
+.pull-left[
+1. Rows are observations (individuals) and columns are variables.
+
+2. Any missing value in the data must be removed or estimated.
+
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+]
+
+.pull-right[
+
+```{r, eval=FALSE}
+# exact same procedure you ran for clustering
+crime <- USArrests %>%
+  drop_na() %>%
+  scale() %>%
+  print()
+```
+
+]
+
+---
+# Applying PCA .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 14]
+
+.pull-left[
+1. .opacity20[Rows are observations (individuals) and columns are variables.]
+
+2. .opacity20[Any missing value in the data must be removed or estimated.]
+
+3. .opacity20[The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.]
+
+4. Apply `prcomp()`
+]
+
+.pull-right[
+
+```{r pca-apply}
+# perform PCA
+pca_result <- prcomp(crime, scale = FALSE)
+
+# PCA model output
+names(pca_result)
+```
+
+.font120[`rotation`] provides the principal component loadings ( $\phi_{ij}$ )
+
+]
+
+---
+# Understanding PCs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 15]
+
+.pull-left[
+
+* .font110[`rotation`] provides the principal component loadings ( $\phi_{ij}$ )
+
+* There will be the same number of PCs as variables
+
+* Positive vs negative direction:
+   - By default, loadings (aka eigenvectors) in R point in the negative direction. 
+   - Positive pointing eigenvectors are more intuitive 
+   - To use the positive-pointing vector, we multiply the default loadings by -1.
+
+]
+
+.pull-right[
+
+```{r pca-convert-loadings}
+# convert loadings to positive
+pca_result$rotation <- -pca_result$rotation
+
+# there will be the same number of PCs as variables
+pca_result$rotation
+```
+
+]
+
+<br>
+
+.center.bold[__Loadings represent coefficients; illustrates each variables influence on the principal component__]
+
+---
+# Understanding PCs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 16]
+
+We can visualize these contributions
+
+.pull-left[
+
+```{r pca-pc1-contributions, fig.height=4}
+fviz_contrib(pca_result, choice = "var", axes = 1)
+```
+
+.center[PC1 appears to represent violent crime]
+
+]
+
+.pull-right[
+
+```{r pca-pc2-contributions, fig.height=4}
+fviz_contrib(pca_result, choice = "var", axes = 2)
+```
+
+.center[PC2 appears to represent urban density]
+
+]
+
+---
+# Understanding PCs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 17]
+
+.pull-left[
+
+* .font110[`x`] provides the principal component scores
+
+* The principal components scores simply places a standardized score for each observation for each principal component.
+
+* Interpretation example: Alaska
+   - PC1: 1.93 standard deviations above average value for PC1 (high violent crime)
+   - PC2: 1 standard deviation below average value for PC2 (low urbanization)
+
+]
+
+.pull-right[
+
+```{r, echo=FALSE}
+pca_result$x <- -pca_result$x
+```
+
+
+```{r pca-scores, eval=FALSE}
+# convert scores to positive
+pca_result$x <- -pca_result$x
+-pca_result$x
+##                        PC1         PC2         PC3          PC4
+## Alabama         0.97566045 -1.12200121  0.43980366 -0.154696581
+## Alaska          1.93053788 -1.06242692 -2.01950027  0.434175454 #<<
+## Arizona         1.74544285  0.73845954 -0.05423025  0.826264240
+## Arkansas       -0.13999894 -1.10854226 -0.11342217  0.180973554
+## California      2.49861285  1.52742672 -0.59254100  0.338559240
+## Colorado        1.49934074  0.97762966 -1.08400162 -0.001450164
+## Connecticut    -1.34499236  1.07798362  0.63679250  0.117278736
+## Delaware        0.04722981  0.32208890  0.71141032  0.873113315
+## Florida         2.98275967 -0.03883425  0.57103206  0.095317042
+## Georgia         1.62280742 -1.26608838  0.33901818 -1.065974459
+## Hawaii         -0.90348448  1.55467609 -0.05027151 -0.893733198
+## Idaho          -1.62331903 -0.20885253 -0.25719021  0.494087852
+## Illinois        1.36505197  0.67498834  0.67068647  0.120794916
+## Indiana        -0.50038122  0.15003926 -0.22576277 -0.420397595
+## Iowa           -2.23099579  0.10300828 -0.16291036 -0.017379470
+## Kansas         -0.78887206  0.26744941 -0.02529648 -0.204421034
+## Kentucky       -0.74331256 -0.94880748  0.02808429 -0.663817237
+## Louisiana       1.54909076 -0.86230011  0.77560598 -0.450157791
+## Maine          -2.37274014 -0.37260865  0.06502225
+```
+
+]
 
 ---
 # Selecting the number of principal components
 
+.pull-left[
+
+* The goal of PCA is dimension reduction but how many PCs do we keep?
+
+* Two common approaches:
+   1. scree plot
+   2. proportion of variance explained
+
+]
 
 ---
-# Insight interpretation
+# Selecting the number of PCs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 18]
 
+.pull-left[
+
+* The goal of PCA is dimension reduction but how many PCs do we keep?
+
+* Two common approaches:
+   1. scree plot  
+      a. Eigenvalue: retain PCs $\geq$ 1 (an eigenvalue of 1 means that the principal component would explain about one variable’s worth of the variability)  
+      b. Variance explained: look for elbow
+
+]
+
+.pull-right[
+
+```{r scree-plots, fig.height=2.5}
+fviz_screeplot(pca_result, choice = "eigenvalue")
+fviz_screeplot(pca_result, choice = "variance")
+```
+
+]
+
+---
+# Selecting the number of PCs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 18]
+
+.pull-left[
+
+* The goal of PCA is dimension reduction but how many PCs do we keep?
+
+* Two common approaches:
+   1. .opacity20[scree plot]
+   2. proportion of variance explained
+
+]
+
+.pull-right[
+
+```{r pve}
+# compute eigenvalues
+eigen <- pca_result$sdev^2
+
+# compute the PVE of each principal component
+PVE <- eigen / sum(eigen)
+
+# how many PCs required to explain at least 90% of total variability
+min(which(cumsum(PVE) >= .90))
+```
+
+]
+
+<br>
+
+.center[_PVE provides us a technical way to identify the optimal number of principal components to keep based on the total variability that we would like to account for. In feature engineering, it is common for the default to be set at 95%._]
+
+---
+# Insight interpretation .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 19]
+
+.pull-left[
+
+```{r, fig.height=6}
+fviz_pca_var(pca_result, alpha.var = "contrib")
+```
+
+]
+
+.pull-right[
+
+```{r pca-2-dimensional-loadings-scatterplot, fig.height=6}
+fviz_pca(pca_result, alpha.ind = .5, labelsize = 3, repel = TRUE)
+```
+
+]
 
 ---
 # PCA with mixed data
+
+.pull-left[
+
+* Rarely do we have only numeric data
+
+* But what do we do with categorical features?
+
+* The answer is...it depends
+
+]
+
+.pull-right[
+
+```{r it-depends, echo=FALSE, out.width="90%", out.height="90%"}
+knitr::include_graphics("https://media.giphy.com/media/3dWbqRU3Q4YAo/giphy.gif")
+```
+
+]
+
+---
+# PCA with mixed data .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 20]
+
+.scrollable90[
+.pull-left[
+
+* Rarely do we have only numeric data
+
+* But what do we do with categorical features?
+
+* The answer is...it depends
+
+* .bold[PCA for inference]
+   - option 1: one hot encode `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1542340469/4974/notinterested.gif?1542340469", size = 2, animate = FALSE)`
+   - option 2: use GLRMs `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870", size = 1.5, animate = FALSE)`
+
+]
+
+.pull-right[
+
+.center.bold[One-hot encoding example]
+
+```{r one-hot, fig.height=3}
+# full ames data set --> recode ordinal variables to numeric
+ames_full <- AmesHousing::make_ames() %>%
+  mutate_if(str_detect(names(.), "Qual|Cond|QC|Qu"), as.numeric)
+
+# one-hot encode --> retain only the features and not sale price
+full_rank  <- caret::dummyVars(Sale_Price ~ ., data = ames_full, fullRank = TRUE)
+ames_1hot <- predict(full_rank, ames_full)
+
+# new dimensions
+dim(ames_1hot)
+
+# apply PCA to one-hot encoded data
+pca_one_hot <- prcomp(ames_1hot, scale = TRUE)
+
+# sign adjustment to loadings and scores
+pca_one_hot$rotation <- -pca_one_hot$rotation
+pca_one_hot$x <- -pca_one_hot$x
+
+# scree plot
+fviz_screeplot(pca_one_hot, ncp = 20, choice = "eigenvalue")
+```
+
+```{r one-hot2}
+# variable contributions
+fviz_pca_var(pca_one_hot, alpha.var = "contrib", geom = "text", labelsize = 3, arrowsize = NULL)
+```
+
+
+]
+]
+
+---
+# PCA with mixed data .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 21]
+
+.scrollable90[
+.pull-left[
+
+* Rarely do we have only numeric data
+
+* But what do we do with categorical features?
+
+* The answer is...it depends
+
+* PCA for inference
+   - option 1: one hot encode
+   - option 2: use GLRMs
+
+* .bold[PCA for downstream modeling]
+
+]
+
+.pull-right[
+
+```{r down-stream-modeling}
+# get feature set
+ames_full <- AmesHousing::make_ames()
+features <- subset(ames_full, select = -Sale_Price)
+
+# preprocess data
+preprocess <- caret::preProcess(
+  x = features,
+  method = c("center", "scale", "pca"),
+  thresh = 0.95
+)
+
+preprocess
+```
+]
+]
+
+---
+# .red[A lot of information in a little amount of time!]
+
+```{r what-just-happened, echo=FALSE, out.height="80%", out.width="80%"}
+knitr::include_graphics("https://i.gifer.com/CdDA.gif")
+```
+
+
+---
+# Final Thoughts
+
+.pull-left[
+
+.center.bold[What to remember]
+
+- PCA reduces the dimensionality of a feature set
+- PCA explains the variability of our feature set using fewer variables than the original data set.
+- Data prep
+   - clean & standardize data
+- convert `prcomp()` eigenvalues & scores to positive
+- Eigenvalues (loadings) represent a variables influence on the principal component
+- PC scores represent standardized value for observation for a given PC
+- Select number of PCs with
+   - scree plot or
+   - PVE
+- Got mixed data
+   - one-hot encode for inference
+   - PCA on numeric for downstream modeling
+]
+
+.pull-right[
+
+.center.bold[What to learn]
+
+- Many more methods exist; definitely start learning
+   - Non-negative matrix factorization
+   - [Generalized low rank models](https://stanford.edu/~boyd/papers/pdf/glrm.pdf)
+- Great resources
+   - [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/)
+   - [Elements of Statistical Learning](https://web.stanford.edu/~hastie/ElemStatLearn/)
+   - [Practical Guide to Principal Component Methods in R](https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=Practical+Guide+to+Principal+Component+Methods+in+R)
+
+]
+
+---
+# Questions?
+
+```{r unsupervised-questions, echo=FALSE, out.height="60%", out.width="60%"}
+knitr::include_graphics("https://media3.giphy.com/media/DUrdT2xEmJWbS/giphy.gif")
+```
+
+---
+# Back home
+
+<br><br><br><br>
+[.center[`r anicon::faa("home", size = 10, animate = FALSE)`]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
+

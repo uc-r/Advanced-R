@@ -13,37 +13,32 @@ with R’s various classes, tidy eval, measuring and improving code
 performance, and writing R packages. The following is an outline of the
 material covered in this training:
 
-**Day 1**
+**Day
+1**
 
-| Topic                                 |     Time      |
-| :------------------------------------ | :-----------: |
-| Breakfast / Social time               |  8:00 - 9:00  |
-| Introductions & review of assumptions | 9:00 - 10:00  |
-| Inference                             | 10:00 - 10:45 |
-| Break                                 | 10:45 - 11:00 |
-| Unsupervised learning                 | 11:00 - 12:00 |
-| Lunch                                 | 12:00 - 1:00  |
-| Model prep + feature engineering      |  1:00 - 1:45  |
-| Regression + cousins                  |  1:45 - 2:45  |
-| Break                                 |  2:45 - 3:00  |
-| Tree-based methods                    |  3:00 - 4:00  |
-| Q\&A                                  |  4:00 - 4:30  |
+| Topic                                                                                    |     Time      |
+| :--------------------------------------------------------------------------------------- | :-----------: |
+| Breakfast / Social time                                                                  |  8:00 - 9:00  |
+| Getting started                                                                          |  9:00 - 9:45  |
+| [Unsupervised modeling](https://uc-r.github.io/Advanced-R/02-unsupervised-learning.html) | 9:45 - 10:45  |
+| Break                                                                                    | 10:45 - 11:00 |
+| Supervised modeling process                                                              | 11:00 - 12:00 |
+| Lunch                                                                                    | 12:00 - 1:00  |
+| Feature & target engineering                                                             |  1:00 - 2:00  |
+| Regression & cousins                                                                     |  2:00 - 4:00  |
+| Q\&A                                                                                     |  4:00 - 4:30  |
 
 **Day 2**
 
-| Topic                                  |     Time     |
-| :------------------------------------- | :----------: |
-| Breakfast / Social time                | 8:00 - 9:00  |
-| Writing functions                      |     ???      |
-| Tidy evaluation                        |     ???      |
-| Conditions: Preventative maintenance   |     ???      |
-| Debugging: Reactive maintenance        |     ???      |
-| Measuring & improving code performance |     ???      |
-| Lunch                                  | 12:00 - 1:00 |
-| Writing your first package             | 1:00 - 2:30  |
-| Break                                  | 2:30 - 2:45  |
-| Shiny & RStudio addins                 | 2:45 - 4:00  |
-| Q\&A                                   | 4:00 - 4:30  |
+| Topic                                     |     Time      |
+| :---------------------------------------- | :-----------: |
+| Breakfast / Social time                   |  8:00 - 9:00  |
+| Decision trees, bagging, & random forests | 9:00 - 11:00  |
+| Gradient boosting machines                | 11:00 - 12:00 |
+| Lunch                                     | 12:00 - 1:00  |
+| Stacked models & autoML                   |  1:00 - 2:30  |
+| Interpretable machine learning            |  2:45 - 4:00  |
+| Q\&A                                      |  4:00 - 4:30  |
 
 ***Schedule is still being refined and is subject to change; however,
 the topics should remain the same.***
