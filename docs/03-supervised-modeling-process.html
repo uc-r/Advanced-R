@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Supervised Modeling Process</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-02-28" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: clear, center, middle
+
+background-image: url(images/process-icon.svg)
+background-position: center
+background-size: contain
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; .font200.grey[Supervised Modeling Process]
+
+---
+# Introduction
+
+This module introduces concepts that are useful for any type of machine learning model:
+
+- modeling process versus a model
+
+- data splitting
+
+- nuances of the R modeling ecosystem
+
+- resampling
+
+- bias-variance trade-off
+
+- model evaluation
+
+&lt;br&gt;
+
+.center.bold[Many of these topics will be put into action in later sections.]
+
+---
+# Overview
+
+.pull-left[
+
+* the machine learning process is very iterative and heurstic-based 
+
+* common for many ML approaches to be applied, evaluated, and modified before a final, optimal model can be determined
+
+* A proper process needs to be implemented to have confidence in our results
+
+&lt;br&gt;&lt;br&gt;
+
+.center.bold.blue[_Not a short sprint!_]
+
+]
+
+.pull-right[
+
+&lt;br&gt;&lt;br&gt;
+
+&lt;img src="images/modeling_process.png" width="2391" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Prerequisites
+
+.pull-left[
+
+.center.bold.font110[Packages]
+
+
+```r
+library(rsample)
+library(caret)
+library(tidyverse)
+```
+
+]
+
+.pull-right[
+
+.center.bold.font110[Data]
+
+
+```r
+# ames data
+ames &lt;- AmesHousing::make_ames()
+
+# attrition data
+churn &lt;- rsample::attrition
+```
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Data Splitting]
+
+---
+# Generalizability
+
+__Generalizability__: we want an algorithm that not only fits well to our past data, but more importantly, one that .blue[predicts a future outcome accurately].
+
+--
+
+- .bold[Training Set]: these data are used to develop feature sets, train our algorithms, tune hyper-parameters, compare across models, and all of the other activities required to reach a final model decision.
+
+- .bold[Test Set]: having chosen a final model, these data are used to estimate an unbiased assessment of the model’s performance (generalization error).
+
+--
+
+.pull-left[
+
+&lt;br&gt;&lt;br&gt;
+.center.bold.red[DO NOT TOUCH THE TEST SET UNTIL THE VERY END!!!]
+
+]
+
+.pull-right[
+
+&lt;img src="images/nope.png" width="30%" height="30%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# What's the right split?
+
+* typical recommendations for splitting your data into training-testing splits include 60% (training) - 40% (testing), 70%-30%, or 80%-20%
+
+* as data sets get smaller ( `\(n&lt;500\)` ):
+   - spending too much in training (*&gt; 80%*) won’t allow us to get a good assessment of predictive performance. We may find a model that fits the training data very well, but is not generalizable (overfitting),
+   - sometimes too much spent in testing (*&lt; 40%*) won’t allow us to get a good assessment of model parameters
+
+* as data gets larger ( `\(n&gt;100K\)` ):
+   - marginal gains with larger sample sizes
+   - may use a smaller training sample to increase computation speed
+   - as `\(n \geq p\)` (where *p* represents the number of features), larger samples sizes are often required to identify consistent signals in the features
+
+---
+# Mechanics of data splitting
+
+Two most common ways of splitting data include:
+
+* .bold[simple random sampling]: randomly select observations
+
+* .bold[stratified sampling]: preserving distributions
+   - &lt;u&gt;classification&lt;/u&gt;: sampling within the classes to preserve the distribution of the outcome in the training and test sets
+   - &lt;u&gt;regression&lt;/u&gt;: determine the quartiles of the data set and sample within those artificial groups
+
+.pull-left[
+   
+
+```r
+set.seed(123) # for reproducibility
+split &lt;- initial_split(diamonds, strata = "price", prop = 0.7)
+train &lt;- training(split)
+test  &lt;- testing(split)
+
+# Do the distributions line up? 
+ggplot(train, aes(x = price)) + 
+  geom_line(stat = "density", 
+            trim = TRUE) + 
+  geom_line(data = test, 
+            stat = "density", 
+            trim = TRUE, col = "red")
+```
+   
+]
+
+.pull-right[
+   
+&lt;img src="03-supervised-modeling-process_files/figure-html/split-diamonds2-1.png" style="display: block; margin: auto;" /&gt;
+   
+]
+  
+---
+class: yourturn
+# Your Turn!
+
+1. Use __rsample__ to split the Ames housing data (`ames`) and the Employee attrition data (`churn`) using stratified sampling and with a 80% split.
+
+   ```r
+   # ames data
+   set.seed(123)
+   ames_split &lt;- initial_split(ames, prop = _____, strata = "Sale_Price")
+   ames_train &lt;- training(_____)
+   ames_test  &lt;- testing(_____)
+   
+   # attrition data
+   set.seed(123)
+   churn_split &lt;- initial_split(churn, prop = _____, strata = "Attrition")
+   churn_train &lt;- training(_____)
+   churn_test  &lt;- testing(_____)
+   ```
+2. Verify that the distribution between training and test sets are similar.
+
+---
+class: yourturn
+# Your Turn!
+
+.scrollable90[
+.pull-left[
+
+.center.bold[Ames Housing]
+
+
+```r
+set.seed(123)
+ames_split &lt;- initial_split(ames, prop = 0.7, strata = "Sale_Price")
+ames_train &lt;- training(ames_split)
+ames_test  &lt;- testing(ames_split)
+
+# Do the distributions line up? 
+ggplot(ames_train, aes(x = Sale_Price)) + 
+  geom_line(stat = "density", 
+            trim = TRUE) + 
+  geom_line(data = ames_test, 
+            stat = "density", 
+            trim = TRUE, col = "red")
+```
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/split-ames-1.png" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+.center.bold[Employee Attrition]
+
+
+```r
+set.seed(123)
+churn_split &lt;- initial_split(churn, prop = 0.7, strata = "Attrition")
+churn_train &lt;- training(churn_split)
+churn_test  &lt;- testing(churn_split)
+
+# consistent response ratio between train &amp; test
+table(churn_train$Attrition) %&gt;% prop.table()
+## 
+##       No      Yes 
+## 0.838835 0.161165
+table(churn_test$Attrition) %&gt;% prop.table()
+## 
+##        No       Yes 
+## 0.8386364 0.1613636
+```
+
+]
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Creating models in R]
+
+
+---
+# Many interfaces
+
+To fit a model to our data, the model terms must be specified. There are .bold[three main interfaces] for doing this:
+
+.pull-left[
+
+1. .blue[Formula interface]
+
+]
+
+.pull-right[
+
+
+```r
+# Variables + interactions
+model_fn(Sale_Price ~ Neighborhood + Year_Sold + Neighborhood:Year_Sold, data = ames_train)
+
+# Shorthand for all predictors
+model_fn(Sale_Price ~ ., data = ames_train)
+
+# Inline functions / transformations
+model_fn(log10(Sale_Price) ~ ns(Longitude, df = 3) + ns(Latitude, df = 3), data = ames_train)
+```
+
+]
+
+---
+# Many interfaces
+
+To fit a model to our data, the model terms must be specified. There are .bold[three main interfaces] for doing this:
+
+.pull-left[
+
+1. Formula interface
+2. .blue[XY interface]
+
+]
+
+.pull-right[
+
+
+```r
+# Usually, the variables must all be numeric
+pre_vars &lt;- c("Year_Sold", "Longitude", "Latitude")
+model_fn(x = ames_train[, pre_vars], y = ames_train$Sale_Price)
+```
+
+]
+
+---
+# Many interfaces
+
+To fit a model to our data, the model terms must be specified. There are .bold[three main interfaces] for doing this:
+
+.pull-left[
+
+1. Formula interface
+2. XY interface
+3. .blue[Variable name specification]
+
+]
+
+.pull-right[
+
+
+```r
+# specify x &amp; y by character strings
+model_fn(
+  x = c("Year_Sold", "Longitude", "Latitude"),
+  y = "Sale_Price",
+  data = ames.h2o
+  )
+```
+
+]
+
+--
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+.center.bold.font110.red[_We can get around these inconsistencies with meta-engines_]
+
+---
+# Many engines
+
+With the prevelance of ML packages available, this results in an abundance of direct and meta engines that can be used.
+
+For example, the following all produce the same linear regression model output:
+
+
+```r
+lm_lm    &lt;- lm(Sale_Price ~ ., data = ames_train)
+lm_glm   &lt;- glm(Sale_Price ~ ., data = ames_train, family = gaussian)
+lm_caret &lt;- train(Sale_Price ~ ., data = ames_train, method = "lm")
+```
+
+* `lm()` and `glm()` are two different engines that can be used to fit the linear model
+* `caret::train()` is a meta engine (aggregator) that allows you to apply almost any direct engine with `method = ?`
+
+---
+# Many engines
+
+* Using direct engines provides .green[more flexibility] but
+
+* requires you to be familiar with .red[syntax nuances]
+
+&lt;br&gt;
+
+| Algorithm | Package | Code |
+| --------- | ------- | ------------- |
+| Linear discriminant analysis | __MASS__ | `predict(obj)` |
+| Generalized linear model |	__stats__	| `predict(obj, type = "response")` |
+| Mixture discriminant analysis |	__mda__	|	`predict(obj, type = "posterior")` |
+| Decision tree |	__rpart__	|	`predict(obj, type = "prob")` |
+| Random Forest |	__ranger__ |	`predict(obj)$predictions` |
+| Gradient boosting machine |	__gbm__ |	`predict(obj, type = "response", n.trees)` |
+
+.center.bold[You'll be exposed to both direct and meta engines]
+
+
+---
+class: center, middle, inverse
+
+.font300.white[Resampling Methods]
+
+---
+# Resampling methods
+
+___Resampling___ provides an approach for us to repeatedly fit a model of interest to parts of the training data and testing the performance on other parts. 
+
+.pull-left[
+
+* Allows us to _estimate_ the generalization error while training, tuning, and comparing models without using the test data set
+
+* The two most commonly used resampling methods include 
+   - _k_-fold cross validation 
+   - bootstrapping.
+]
+
+.pull-right[
+
+&lt;img src="images/resampling.png" width="961" style="display: block; margin: auto;" /&gt;
+
+.center.font70[[Image by Max Kuhn](https://bookdown.org/max/FES/review-predictive-modeling-process.html#fig:review-resamp-scheme)]
+
+]
+
+---
+# _K_-fold cross valiation
+
+.pull-left[
+
+* randomly divides the training data into k groups of approximately equal size
+
+* assign one block as the .orange[test block] and the rest as .blue[training block]
+
+* train model on each folds' .blue[training block] and evaluate on .orange[test block]
+
+* average performance across all folds
+
+]
+
+.pull-right[
+
+&lt;br&gt;
+
+&lt;img src="images/cv.png" width="1908" style="display: block; margin: auto;" /&gt;
+
+.center.bold[_k_ is usually taken to be 5 or 10]
+
+]
+
+---
+# _K_-fold cross valiation
+
+.pull-left[
+
+* randomly divides the training data into k groups of approximately equal size
+
+* assign one block as the .orange[test block] and the rest as .blue[training block]
+
+* train model on each folds' .blue[training block] and evaluate on .orange[test block]
+
+* average performance across all folds
+
+* .blue[Pro tip]: for smaller data sets ( `\(n &lt; 10,000\)` ), 10-fold cross validation repeated 5 or 10 times will improve accuracy of your estimated performance
+
+]
+
+.pull-right[
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/cv-demo-1.png" style="display: block; margin: auto;" /&gt;
+
+.center.bold[10-fold cross validation with _n = 32_]
+
+]
+
+---
+# Applying
+
+Three main approaches to apply cross-validation:
+
+.scrollable90[
+.bold[Within a direct engine:]
+
+
+```r
+# example of 10 fold CV in h2o
+h2o_cv &lt;- h2o.glm(
+  x = x, 
+  y = y, 
+  training_frame = train.h2o,
+* nfolds = 10
+  )
+```
+
+.bold[Within a meta engine:]
+
+
+```r
+# example of 10 fold CV in caret
+caret_cv &lt;- train(
+  Sale_Price ~ .,
+  data = ames_train,
+  method = "lm",
+* trControl = trainControl(method = "cv",  number = 10)
+  )
+```
+
+.bold[External to engine:]
+
+
+```r
+# example of 10 fold CV with rsample::vfold_cv
+ext_cv &lt;- vfold_cv(ames_train, v = 10)
+ext_cv
+## #  10-fold cross-validation 
+## # A tibble: 10 x 2
+##    splits             id    
+##    &lt;list&gt;             &lt;chr&gt; 
+##  1 &lt;split [1.8K/206]&gt; Fold01
+##  2 &lt;split [1.8K/206]&gt; Fold02
+##  3 &lt;split [1.8K/206]&gt; Fold03
+##  4 &lt;split [1.8K/206]&gt; Fold04
+##  5 &lt;split [1.8K/205]&gt; Fold05
+##  6 &lt;split [1.8K/205]&gt; Fold06
+##  7 &lt;split [1.8K/205]&gt; Fold07
+##  8 &lt;split [1.8K/205]&gt; Fold08
+##  9 &lt;split [1.8K/205]&gt; Fold09
+## 10 &lt;split [1.8K/205]&gt; Fold10
+names(ext_cv$splits$`1`)
+## [1] "data"   "in_id"  "out_id" "id"
+```
+]
+
+---
+# Bootstrapping
+
+A bootstrap sample is the same size as the training set but each data point is selected ___with replacement___.
+
+.pull-left[
+* .bold[Analysis set]: Will contain more than one replicate of a training set instance.
+
+* .bold[Assessment set]: Contains all samples that were never included in the corresponding bootstrap set. Often called the ___"out-of-bag"___ sample and can vary in size!
+
+]
+
+.pull-right[
+
+&lt;img src="images/bootstrap-scheme.png" width="1379" style="display: block; margin: auto;" /&gt;
+
+]
+
+&lt;br&gt;&lt;br&gt;
+
+.center.bold[On average, 63.21% of the training set is contained at least once in the bootstrap sample.]
+
+---
+# Bootstrapping
+
+A bootstrap sample is the same size as the training set but each data point is selected ___with replacement___.
+
+.scrollable90[
+.pull-left[
+* .bold[Analysis set]: Will contain more than one replicate of a training set instance.
+
+* .bold[Assessment set]: Contains all samples that were never included in the corresponding bootstrap set. Often called the ___"out-of-bag"___ sample and can vary in size!
+
+* .blue[Pro tip]: For smaller data sets (*n &lt; 500*), bootstrapping can have biased error estimates; use repeated k-fold or corrected bootstrapping methods.
+
+]
+
+.pull-right[
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/sampling-comparison-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+# Applying
+
+.pull-left[
+
+* Similiar to cross validation, we can incorporate bootstrapping with:
+   - meta engines
+   - external to engines
+
+* however, bootstrapping is more of an internal resampling procedure that is naturally built into certain ML algorithms:
+   - bagging
+   - random forests
+   - GBMs
+
+]
+
+.pull-right[
+
+.bold[Within a meta engine:]
+
+
+```r
+# example of 10 bootstrap samples in caret
+caret_boot &lt;- train(
+  Sale_Price ~ .,
+  data = ames_train,
+  method = "lm",
+* trControl = trainControl(method = "boot",  number = 10)
+  )
+```
+
+.bold[External to engine:]
+
+
+```r
+# example of 10 bootstrapped samples with rsample::bootstraps
+bootstraps(ames, times = 10)
+## # Bootstrap sampling 
+## # A tibble: 10 x 2
+##    splits              id         
+##    &lt;list&gt;              &lt;chr&gt;      
+##  1 &lt;split [2.9K/1.1K]&gt; Bootstrap01
+##  2 &lt;split [2.9K/1.1K]&gt; Bootstrap02
+##  3 &lt;split [2.9K/1.1K]&gt; Bootstrap03
+##  4 &lt;split [2.9K/1.1K]&gt; Bootstrap04
+##  5 &lt;split [2.9K/1.1K]&gt; Bootstrap05
+##  6 &lt;split [2.9K/1.1K]&gt; Bootstrap06
+##  7 &lt;split [2.9K/1.1K]&gt; Bootstrap07
+##  8 &lt;split [2.9K/1.1K]&gt; Bootstrap08
+##  9 &lt;split [2.9K/1.1K]&gt; Bootstrap09
+## 10 &lt;split [2.9K/1.1K]&gt; Bootstrap10
+```
+]
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Bias-Variance Trade-off]
+
+
+---
+# Bias-variance trade-off
+
+* Prediction errors can be decomposed into two main subcomponents we care about:
+   - error due to “bias”
+   - error due to “variance”
+   
+* There is a tradeoff between a model’s ability to minimize bias and variance. 
+
+* Understanding how different sources of error lead to bias and variance helps us improve the data fitting process resulting in more accurate models.
+
+--
+
+.pull-left[
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/bias-model-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+--
+
+.pull-right[
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/variance-model-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Bias-variance trade-off
+
+* Prediction errors can be decomposed into two main subcomponents we care about:
+   - error due to “bias”
+   - error due to “variance”
+   
+* There is a tradeoff between a model’s ability to minimize bias and variance. 
+
+* Understanding how different sources of error lead to bias and variance helps us improve the data fitting process resulting in more accurate models.
+
+* Some models are naturally...
+   - .bold[high bias]: generalized linear models
+   - .bold[high variance]: tree-based models, NNets, KNN, etc. 
+   
+&lt;br&gt;
+
+.center.bold.red.font120[Hyperparameters can help to control bias-variance trade-off]   
+
+---
+# Hyperparameter tuning
+
+Hyperparameters (aka _tuning parameters_) are the "knobs to twiddle" to control of complexity of machine learning algorithms and, therefore, the bias-variance trade-off
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/example-knn-1.png" style="display: block; margin: auto;" /&gt;
+
+.center[k-nearest neighbor model with differing values for *k*.  Small *k* value has too much variance.  Big *k* value has too much bias.  .red[How do we find the optimal value?]]
+
+---
+# Grid search
+
+A grid search is an automated approach to searching across many combinations of hyperparameter values
+
+.scrollable90[
+
+.pull-left[
+
+```r
+# resampling procedure
+cv &lt;- trainControl(method = "repeatedcv", number = 10, repeats = 10)
+
+# define grid search
+hyper_grid &lt;- expand.grid(k = seq(2, 150, by = 2))
+
+# perform grid search with caret
+knn_fit &lt;- train(
+  x ~ y, 
+  data = df, 
+  method = "knn", 
+  trControl = cv, 
+  tuneGrid = hyper_grid
+  )
+```
+]
+
+.pull-right[
+&lt;img src="03-supervised-modeling-process_files/figure-html/plot-grid-search-results-1.png" style="display: block; margin: auto;" /&gt;
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/plot-best-k-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Model Evaluation Metrics]
+
+---
+# Model evaluation
+
+.pull-left[
+
+.center.bold.font110[Regression]
+
+- Mean Square Error (MSE)
+- Root Mean Square Error (RMSE)
+- Mean Absolute Error (MAE)
+- Mean Absolute Percent Error (MAPE)
+- Root Mean Squared Logarithmic Error (RMSLE)
+
+]
+
+.pull-right[
+
+.center.bold.font110[Classification]
+
+- Classification Accuracy
+- Recall vs. Specificity
+- `\(F_1\)` Score
+- Log Loss
+
+]
+
+---
+# Model evaluation
+
+.pull-left[
+
+.center.bold.font110[Regression]
+
+- .bold[Mean Square Error (MSE)]
+- .bold[Root Mean Square Error (RMSE)]
+- Mean Absolute Error (MAE)
+- Mean Absolute Percent Error (MAPE)
+- Root Mean Squared Logarithmic Error (RMSLE)
+
+&lt;br&gt;&lt;br&gt;
+
+$$MSE = \frac{1}{n}\sum^n_{i=1}(y_i - \hat y_i)^2 $$
+
+]
+
+.pull-right[
+
+.center.bold.font110[Classification]
+
+- .bold[Classification Accuracy]
+- .bold[Recall vs. Specificity]
+- `\(F_1\)` Score
+- Log Loss
+
+&lt;img src="images/confusion-matrix.png" width="80%" height="80%" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Putting the process together]
+
+---
+# Putting the process together
+
+.pull-left[
+Let's put these pieces together and analyze the Ames housing data:
+
+1. Split into training vs testing data
+
+2. Specify a resampling procedure
+
+3. Create our hyperparameter grid
+
+4. Execute grid search
+
+5. Evaluate performance
+]
+
+
+---
+# Putting the process together
+
+.scrollable90[
+.pull-left[
+Let's put these pieces together and analyze the Ames housing data:
+
+1. Split into training vs testing data
+
+2. Specify a resampling procedure
+
+3. Create our hyperparameter grid
+
+4. Execute grid search
+
+5. Evaluate performance
+]
+
+.pull-right[
+
+.center.bold[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~2 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+# 1. stratified sampling with the rsample package
+set.seed(123)
+split  &lt;- initial_split(ames, prop = 0.7, strata = "Sale_Price")
+ames_train  &lt;- training(split)
+ames_test   &lt;- testing(split)
+
+# 2. create a resampling method
+cv &lt;- trainControl(
+  method = "repeatedcv", 
+  number = 10, 
+  repeats = 5
+  )
+
+# 3. create a hyperparameter grid search
+hyper_grid &lt;- expand.grid(k = seq(2, 26, by = 2))
+
+# 4. execute grid search with knn model
+#    use RMSE as preferred metric
+knn_fit &lt;- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  method = "knn", 
+  trControl = cv, 
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# 5. evaluate results
+# print model results
+knn_fit
+## k-Nearest Neighbors 
+## 
+## 2054 samples
+##   80 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold, repeated 5 times) 
+## Summary of sample sizes: 1848, 1850, 1848, 1848, 1848, 1848, ... 
+## Resampling results across tuning parameters:
+## 
+##   k   RMSE      Rsquared   MAE     
+##    2  46100.84  0.6618945  30205.06
+##    4  44203.37  0.6875495  28696.28
+##    6  43881.20  0.6960556  28476.22
+##    8  44051.92  0.6975777  28510.18
+##   10  44151.47  0.7012776  28511.66
+##   12  44293.22  0.7034353  28680.76
+##   14  44465.34  0.7041550  28825.92
+##   16  44710.25  0.7032248  28993.49
+##   18  45173.35  0.6983529  29281.58
+##   20  45431.99  0.6974316  29476.37
+##   22  45831.18  0.6939451  29761.02
+##   24  46216.44  0.6903087  30056.99
+##   26  46567.04  0.6873802  30355.47
+## 
+## RMSE was used to select the optimal model using the smallest value.
+## The final value used for the model was k = 6.
+
+# plot cross validation results
+ggplot(knn_fit$results, aes(k, RMSE)) + 
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+&lt;img src="03-supervised-modeling-process_files/figure-html/example-process-splitting-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+# Putting the process together
+
+.center.bold.font120.red[Is this the best predictive model we can find?]
+
+* We may have identified the  optimal _k_-nearest neighbor model for our given data set but this doesn't mean we've found the best possible overall model.  
+
+* Nor have we considered potential feature and target engineering options.  
+
+* The remainder of this workshop will walk you through the journey of identifying alternative solutions and, hopefully, the optimal model.
+
+--
+
+&lt;img src="https://media.tenor.com/images/8dcbd6365535547e08b33dd08b3b74d8/tenor.gif" style="display: block; margin: auto;" /&gt;
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

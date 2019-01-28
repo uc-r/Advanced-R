@@ -16,17 +16,17 @@ material covered in this training:
 **Day
 1**
 
-| Topic                                                                                    |     Time      |
-| :--------------------------------------------------------------------------------------- | :-----------: |
-| Breakfast / Social time                                                                  |  8:00 - 9:00  |
-| Getting started                                                                          |  9:00 - 9:45  |
-| [Unsupervised modeling](https://uc-r.github.io/Advanced-R/02-unsupervised-learning.html) | 9:45 - 10:45  |
-| Break                                                                                    | 10:45 - 11:00 |
-| Supervised modeling process                                                              | 11:00 - 12:00 |
-| Lunch                                                                                    | 12:00 - 1:00  |
-| Feature & target engineering                                                             |  1:00 - 2:00  |
-| Regression & cousins                                                                     |  2:00 - 4:00  |
-| Q\&A                                                                                     |  4:00 - 4:30  |
+| Topic                                                                                                |     Time      |
+| :--------------------------------------------------------------------------------------------------- | :-----------: |
+| Breakfast / Social time                                                                              |  8:00 - 9:00  |
+| Getting started                                                                                      |  9:00 - 9:45  |
+| [Unsupervised modeling](https://uc-r.github.io/Advanced-R/02-unsupervised-learning.html)             | 9:45 - 10:45  |
+| Break                                                                                                | 10:45 - 11:00 |
+| [Supervised modeling process](https://uc-r.github.io/Advanced-R/03-supervised-modeling-process.html) | 11:00 - 12:00 |
+| Lunch                                                                                                | 12:00 - 1:00  |
+| Feature & target engineering                                                                         |  1:00 - 2:00  |
+| Regression & cousins                                                                                 |  2:00 - 4:00  |
+| Q\&A                                                                                                 |  4:00 - 4:30  |
 
 **Day 2**
 

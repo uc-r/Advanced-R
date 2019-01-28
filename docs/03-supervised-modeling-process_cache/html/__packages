@@ -1,0 +1,15 @@
+base
+ggplot2
+tidyr
+rsample
+lattice
+caret
+h2o
+tidyverse
+tibble
+readr
+purrr
+dplyr
+stringr
+forcats
+bindrcpp
