@@ -991,7 +991,7 @@ Let's put these pieces together and analyze the Ames housing data:
 
 .center.bold[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~2 min `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
 
-```{r example-process-splitting}
+```{r example-process-splitting, fig.height=4}
 # 1. stratified sampling with the rsample package
 set.seed(123)
 split  <- initial_split(ames, prop = 0.7, strata = "Sale_Price")
