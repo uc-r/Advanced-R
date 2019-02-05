@@ -13,3 +13,11 @@ dplyr
 stringr
 forcats
 bindrcpp
+recipes
+knitr
+kableExtra
+QSARdata
+kernlab
+e1071
+ranger
+kknn

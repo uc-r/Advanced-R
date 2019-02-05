@@ -346,7 +346,7 @@ Primary methods:
 
 .pull-right[
 
-.center.font80[.red[Actual values] vs .blue[imputate values]]
+.center.font80[.red[Actual values] vs .blue[imputed values]]
 
 ```{r imputation-examples, echo=FALSE}
 impute_ames <- ames_train
@@ -1053,9 +1053,10 @@ ames_test   <- testing(split)
 # 2. Feature engineering
 blueprint <- recipe(Sale_Price ~ ., data = ames_train) %>%
   step_nzv(all_nominal()) %>%
+  step_integer(matches("Qual|Cond|QC|Qu")) %>%
   step_center(all_numeric(), -all_outcomes()) %>%
   step_scale(all_numeric(), -all_outcomes()) %>%
-  step_integer(matches("Qual|Cond|QC|Qu"))
+  step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE)
 
 # 3. create a resampling method
 cv <- trainControl(
@@ -1065,18 +1066,14 @@ cv <- trainControl(
   )
 
 # 4. create a hyperparameter grid search
-hyper_grid <- expand.grid(
-  kmax = seq(2, 26, by = 2),
-  distance = 2, 
-  kernel = "optimal"
-  )
+hyper_grid <- expand.grid(k = seq(2, 25, by = 1))
 
 # 5. execute grid search with knn model
 #    use RMSE as preferred metric
 knn_fit <- train(
   blueprint, 
   data = ames_train, 
-  method = "kknn", 
+  method = "knn", 
   trControl = cv, 
   tuneGrid = hyper_grid,
   metric = "RMSE"
@@ -1087,7 +1084,7 @@ knn_fit <- train(
 knn_fit
 
 # plot cross validation results
-ggplot(knn_fit$results, aes(kmax, RMSE)) + 
+ggplot(knn_fit$results, aes(k, RMSE)) + 
   geom_line() +
   geom_point() +
   scale_y_continuous(labels = scales::dollar)
@@ -1099,10 +1096,24 @@ ggplot(knn_fit$results, aes(kmax, RMSE)) +
 ---
 # Putting the process together
 
-.center.bold.font120[Feature engineering alone reduced our error by XXX!]
+.center.bold.font120[Feature engineering alone reduced our error by $10,000!]
 
 ```{r will-ferrell-excited, echo=FALSE, out.width="90%", out.height="90%"}
 knitr::include_graphics("https://media1.tenor.com/images/2b6d0826f02a9ba7c9d4384a740013e9/tenor.gif?itemid=5531028")
 ```
 
+---
+# Questions?
+
+```{r unsupervised-questions, echo=FALSE, out.height="50%", out.width="50%"}
+knitr::include_graphics("http://www.whitehouse51.com/thumbnail/a/any-questions-meme-100-images-thanks-for-listening-any-1.jpeg")
+```
+
+---
+# Back home
+
+<br><br><br><br>
+[.center[`r anicon::faa("home", size = 10, animate = FALSE)`]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
 

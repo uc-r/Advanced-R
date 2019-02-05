@@ -1050,5 +1050,19 @@ ggplot(knn_fit$results, aes(k, RMSE)) +
 knitr::include_graphics("https://media.tenor.com/images/8dcbd6365535547e08b33dd08b3b74d8/tenor.gif")
 ```
 
+---
+# Questions?
+
+```{r unsupervised-questions, echo=FALSE, out.height="50%", out.width="50%"}
+knitr::include_graphics("https://media.makeameme.org/created/i-love-questions.jpg")
+```
+
+---
+# Back home
+
+<br><br><br><br>
+[.center[`r anicon::faa("home", size = 10, animate = FALSE)`]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
 
 
