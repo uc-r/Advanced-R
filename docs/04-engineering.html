@@ -1096,9 +1096,10 @@ ames_test   &lt;- testing(split)
 # 2. Feature engineering
 blueprint &lt;- recipe(Sale_Price ~ ., data = ames_train) %&gt;%
   step_nzv(all_nominal()) %&gt;%
+  step_integer(matches("Qual|Cond|QC|Qu")) %&gt;%
   step_center(all_numeric(), -all_outcomes()) %&gt;%
   step_scale(all_numeric(), -all_outcomes()) %&gt;%
-  step_integer(matches("Qual|Cond|QC|Qu"))
+  step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE)
 
 # 3. create a resampling method
 cv &lt;- trainControl(
@@ -1108,18 +1109,14 @@ cv &lt;- trainControl(
   )
 
 # 4. create a hyperparameter grid search
-hyper_grid &lt;- expand.grid(
-  kmax = seq(2, 26, by = 2),
-  distance = 2, 
-  kernel = "optimal"
-  )
+hyper_grid &lt;- expand.grid(k = seq(2, 25, by = 1))
 
 # 5. execute grid search with knn model
 #    use RMSE as preferred metric
 knn_fit &lt;- train(
   blueprint, 
   data = ames_train, 
-  method = "kknn", 
+  method = "knn", 
   trControl = cv, 
   tuneGrid = hyper_grid,
   metric = "RMSE"
@@ -1133,35 +1130,42 @@ knn_fit
 ## 2054 samples
 ##   80 predictor
 ## 
-## Recipe steps: nzv, center, scale, integer 
+## Recipe steps: nzv, integer, center, scale, dummy 
 ## Resampling: Cross-Validated (10 fold, repeated 5 times) 
-## Summary of sample sizes: 1848, 1849, 1849, 1848, 1849, 1848, ... 
+## Summary of sample sizes: 1849, 1849, 1849, 1848, 1850, 1848, ... 
 ## Resampling results across tuning parameters:
 ## 
-##   kmax  RMSE      Rsquared   MAE     
-##    2    39221.43  0.7619900  24086.21
-##    4    36381.39  0.7944717  22118.60
-##    6    35419.13  0.8064342  21340.22
-##    8    34836.99  0.8141587  20916.18
-##   10    34433.90  0.8197541  20655.27
-##   12    34203.11  0.8233678  20510.65
-##   14    34109.00  0.8252340  20444.85
-##   16    34067.43  0.8264634  20413.38
-##   18    34051.15  0.8274159  20409.45
-##   20    34052.47  0.8281545  20416.70
-##   22    34070.44  0.8286853  20432.99
-##   24    34106.37  0.8289530  20457.16
-##   26    34149.96  0.8290786  20482.71
+##   k   RMSE      Rsquared   MAE     
+##    2  36404.68  0.7944128  22482.91
+##    3  35319.96  0.8073602  21554.09
+##    4  35424.81  0.8054775  21361.14
+##    5  35214.10  0.8100148  21163.72
+##    6  34645.72  0.8183326  20894.01
+##    7  34409.24  0.8220020  20832.48
+##    8  34023.75  0.8275806  20669.88
+##    9  33818.08  0.8312492  20596.20
+##   10  33744.59  0.8326048  20624.06
+##   11  33734.82  0.8337820  20623.66
+##   12  33723.32  0.8348085  20606.53
+##   13  33794.99  0.8347543  20671.04
+##   14  33972.82  0.8341336  20765.06
+##   15  34075.31  0.8336435  20809.05
+##   16  34150.00  0.8339415  20853.42
+##   17  34203.56  0.8341864  20940.34
+##   18  34284.83  0.8337899  21012.43
+##   19  34325.85  0.8337150  21063.53
+##   20  34381.42  0.8333470  21140.70
+##   21  34424.06  0.8332503  21173.41
+##   22  34443.72  0.8334388  21195.66
+##   23  34489.65  0.8335386  21225.77
+##   24  34509.98  0.8335924  21241.38
+##   25  34532.88  0.8338991  21275.36
 ## 
-## Tuning parameter 'distance' was held constant at a value of 2
-## 
-## Tuning parameter 'kernel' was held constant at a value of optimal
 ## RMSE was used to select the optimal model using the smallest value.
-## The final values used for the model were kmax = 18, distance = 2
-##  and kernel = optimal.
+## The final value used for the model was k = 12.
 
 # plot cross validation results
-ggplot(knn_fit$results, aes(kmax, RMSE)) + 
+ggplot(knn_fit$results, aes(k, RMSE)) + 
   geom_line() +
   geom_point() +
   scale_y_continuous(labels = scales::dollar)
@@ -1175,7 +1179,7 @@ ggplot(knn_fit$results, aes(kmax, RMSE)) +
 ---
 # Putting the process together
 
-.center.bold.font120[Feature engineering alone reduced our error by XXX!]
+.center.bold.font120[Feature engineering alone reduced our error by $10,000!]
 
 &lt;img src="https://media1.tenor.com/images/2b6d0826f02a9ba7c9d4384a740013e9/tenor.gif?itemid=5531028" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
 
