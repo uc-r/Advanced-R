@@ -265,7 +265,7 @@ cv <- trainControl(
 # model 1 CV
 set.seed(123)
 (cv_model1 <- train(
-  form = Sale_Price ~ Gr_Liv_Area, 
+  Sale_Price ~ Gr_Liv_Area, 
   data = ames_train, 
   method = "lm", #<<
   trControl = cv)
@@ -546,6 +546,8 @@ knitr::include_graphics("http://tinderdistrict.com/wp-content/uploads/2018/06/co
 
 ]
 
+--
+
 <br><br>
 
 .bold.center[Many regression extensions have been developed to deal with these concerns.]
@@ -576,7 +578,7 @@ Steps:
 
 .pull-right[
 
-```{r pcr-steps, echo=FALSE, out.height="85%", out.width="85%"}
+```{r pcr-steps, echo=FALSE, out.height="86%", out.width="86%"}
 knitr::include_graphics("images/pcr-steps.png")
 ```
 
@@ -623,6 +625,50 @@ plot(cv_pcr)
 ]
 
 ---
+# Tuning
+
+.scrollable90[
+.pull-left[
+
+- The number of PCs is the only hyperparameter
+
+- rule of `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783", animate = "slow")`
+   - assess 2-*p* in evenly divided segments
+   - start with a few and zoom in
+
+]
+
+.pull-right[
+
+```{r pcr-grid-2, fig.height=5}
+# 1. hypergrid
+p <- length(ames_train) - 1
+hyper_grid <- expand.grid(ncomp = seq(2, 80, length.out = 10)) #<<
+
+# 2. PCR
+set.seed(123)
+cv_pcr <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "pcr", 
+  preProcess = c("zv", "center", "scale"), 
+  tuneGrid = hyper_grid, 
+  metric = "RMSE"
+  )
+
+# RMSE
+cv_pcr$results %>%
+  filter(ncomp == cv_pcr$bestTune$ncomp)
+
+# plot cross-validated RMSE
+plot(cv_pcr)
+```
+
+]
+]
+
+---
 class: center, middle, inverse
 
 .font300.white[Partial Least Squares Regression]
@@ -645,7 +691,7 @@ class: center, middle, inverse
 
 .pull-right[
 
-```{r pls-steps, echo=FALSE, out.height="95%", out.width="95%"}
+```{r pls-steps, echo=FALSE, out.height="94%", out.width="94%"}
 knitr::include_graphics("images/pls-steps.png")
 ```
 
@@ -689,15 +735,587 @@ plot(cv_pls)
 ]
 
 ---
+# Tuning
+
+- The number of PCs is the only hyperparameter
+
+- Will almost always require less PCs than PCR
+
+- rule of `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783", animate = "slow")`
+   - assess 2-*p* in evenly divided segments
+   - start with a few and zoom in
+
+---
 class: center, middle, inverse
 
 .font300.white[Regularized Regression]
 
+---
+# The Idea
+
+.font120[As *p* grows larger, there are three main issues we most commonly run into:]
+
+1. Multicollinearity (we've already seen how PCR & PLS help to resolve this)
+
+2. Insufficient solution ( $p >> n$ )
+
+3. Interpretability
+   - Approach 1: model selection
+      - computationally inefficient (Ames data: $2^{80}$ models to evaluate)
+      - simply assume a feature as in or out $\rightarrow$ _hard threshholding_
+   - Approach 2: regularize
+      - retain all coefficients
+      - slowly pushes a feature's effect towards zero $\rightarrow$ _soft threshholding_
+   
+--
+
+<br>
+.center.bold.blue[Regularization helps with all three of these issues!]
+
+---
+# Regular regression
+
+<br>
+
+\begin{equation}
+\text{minimize} \bigg \{ SSE = \sum^n_{i=1} (y_i - \hat{y}_i)^2 \bigg \}
+\end{equation}
+
+```{r, echo=FALSE, fig.height=5, fig.width=10}
+ames_sub <- ames_train %>%
+  filter(Gr_Liv_Area > 1000 & Gr_Liv_Area < 3000) %>%
+  sample_frac(.5)
+model1 <- lm(Sale_Price ~ Gr_Liv_Area, data = ames_sub)
+
+model1 %>%
+  broom::augment() %>%
+  ggplot(aes(Gr_Liv_Area, Sale_Price)) + 
+  geom_segment(aes(x = Gr_Liv_Area, y = Sale_Price,
+                   xend = Gr_Liv_Area, yend = .fitted), 
+               alpha = 0.3) +
+  geom_point(size = 1, color = "red") +
+  geom_smooth(se = FALSE, method = "lm") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+---
+# Regular.red[ized] regression
+
+<br>
+
+\begin{equation}
+\text{minimize} \big \{ SSE + P \big \}
+\end{equation}
+
+<br>
+
+Modify OLS objective function by adding a ___.red[P]enalty___ parameter 
+
+- Constrains magnitude of the coefficients
+
+- Progressively shrinks coefficients to zero
+
+- Reduces variability of coefficients (pulls correlated coefficients together)
+
+- Can automate feature selection
+
+<br>
+
+.center.bold.blue[There are 3 variants of regularized regression]
+
+---
+# .red[Ridge] regression
+
+.pull-left[
+Objective function: 
+
+\begin{equation}
+\text{minimize } \bigg \{ SSE + \lambda \sum^p_{j=1} \beta_j^2 \bigg \}
+\end{equation}
+
+* referred to as $L_2$ penalty
+
+* pulls correlated features towards each other
+
+* pushes coefficients to .red[near zero]
+
+* retains .red[all] features
+
+]
+
+.pull-right[
+
+```{r ridge-coef-example, echo=FALSE, fig.height=5}
+boston_train_x <- model.matrix(cmedv ~ ., pdp::boston)[, -1]
+boston_train_y <- pdp::boston$cmedv
+
+# model
+boston_ridge <- glmnet::glmnet(
+  x = boston_train_x,
+  y = boston_train_y,
+  alpha = 0
+)
+
+lam <- boston_ridge$lambda %>% 
+  as.data.frame() %>%
+  mutate(penalty = boston_ridge$a0 %>% names()) %>%
+  rename(lambda = ".")
+
+results <- boston_ridge$beta %>% 
+  as.matrix() %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  gather(penalty, coefficients, -rowname) %>%
+  left_join(lam)
+
+result_labels <- results %>%
+  group_by(rowname) %>%
+  filter(lambda == min(lambda)) %>%
+  ungroup() %>%
+  top_n(5, wt = abs(coefficients)) %>%
+  mutate(var = paste0("x", 1:5))
+
+ggplot() +
+  geom_line(data = results, aes(lambda, coefficients, group = rowname, color = rowname), show.legend = FALSE) +
+  scale_x_log10() +
+  geom_text(data = result_labels, aes(lambda, coefficients, label = var, color = rowname), nudge_x = -.06, show.legend = FALSE)
+```
+
+```{r lambda, echo=FALSE}
+knitr::include_graphics("images/lambda.001.png")
+```
+
+]
+
+---
+# .red[Lasso] regression
+
+.pull-left[
+Objective function: 
+
+\begin{equation}
+\text{minimize } \bigg \{ SSE + \lambda \sum^p_{j=1} | \beta_j | \bigg \}
+\end{equation}
+
+* referred to as $L_1$ penalty
+
+* pulls correlated features towards each other
+
+* pushes coefficients to .red[zero]
+
+* performs .red[automated feature selection]
+
+]
+
+.pull-right[
+
+```{r lasso-coef-example, echo=FALSE, fig.height=5}
+# model
+boston_lasso <- glmnet::glmnet(
+  x = boston_train_x,
+  y = boston_train_y,
+  alpha = 1
+)
+
+lam <- boston_lasso$lambda %>% 
+  as.data.frame() %>%
+  mutate(penalty = boston_lasso$a0 %>% names()) %>%
+  rename(lambda = ".")
+
+results <- boston_lasso$beta %>% 
+  as.matrix() %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  gather(penalty, coefficients, -rowname) %>%
+  left_join(lam)
+
+result_labels <- results %>%
+  group_by(rowname) %>%
+  filter(lambda == min(lambda)) %>%
+  ungroup() %>%
+  top_n(5, wt = abs(coefficients)) %>%
+  mutate(var = paste0("x", 1:5))
+
+ggplot() +
+  geom_line(data = results, aes(lambda, coefficients, group = rowname, color = rowname), show.legend = FALSE) +
+  scale_x_log10() +
+  geom_text(data = result_labels, aes(lambda, coefficients, label = var, color = rowname), nudge_x = -.05, show.legend = FALSE)
+```
+
+```{r lambda2, echo=FALSE}
+knitr::include_graphics("images/lambda.001.png")
+```
+
+]
+
+---
+# .red[Elastic net] regression
+
+.pull-left[
+Objective function: 
+
+\begin{equation}
+\text{minimize } \bigg \{ SSE + \lambda_1 \sum^p_{j=1} \beta_j^2 + \lambda_2 \sum^p_{j=1} | \beta_j | \bigg \}
+\end{equation}
+
+* combines $L_1$ & $L_2$ penalties
+
+* provides best of both worlds
+
+]
+
+.pull-right[
+
+```{r elastic-net-coef-example, echo=FALSE, fig.height=5}
+# model
+boston_elastic <- glmnet::glmnet(
+  x = boston_train_x,
+  y = boston_train_y,
+  alpha = .2
+)
+
+lam <- boston_elastic$lambda %>% 
+  as.data.frame() %>%
+  mutate(penalty = boston_elastic$a0 %>% names()) %>%
+  rename(lambda = ".")
+
+results <- boston_elastic$beta %>% 
+  as.matrix() %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  gather(penalty, coefficients, -rowname) %>%
+  left_join(lam)
+
+result_labels <- results %>%
+  group_by(rowname) %>%
+  filter(lambda == min(lambda)) %>%
+  ungroup() %>%
+  top_n(5, wt = abs(coefficients)) %>%
+  mutate(var = paste0("x", 1:5))
+
+ggplot() +
+  geom_line(data = results, aes(lambda, coefficients, group = rowname, color = rowname), show.legend = FALSE) +
+  scale_x_log10() +
+  geom_text(data = result_labels, aes(lambda, coefficients, label = var, color = rowname), nudge_x = -.05, show.legend = FALSE)
+```
+
+```{r lambda3, echo=FALSE}
+knitr::include_graphics("images/lambda.001.png")
+```
+
+]
+
+---
+# Tuning
+
+.pull-left[
+
+* .bold[lambda]
+   - controls the magnitude of the penalty parameter
+   - rule of `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783", animate = "slow")`: 0.1, 10, 100, 1000, 10000
+
+* .bold[alpha]
+   - controls the type of penalty (ridge, lasso, elastic net)
+   - rule of `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1511903783/3230/wiggle_thumbs_up.gif?1511903783", animate = "slow")`: 0, .25, .50, .75, 1
+
+]
+
+.pull-right[
+
+<br>
+.center[.bold[Tip]: find tuning parameters with:]
+
+```{r show-tuning-parameters}
+caret::getModelInfo("glmnet")$glmnet$parameters
+```
+
+.center[Here, "glmnet" represents the __caret__ method we are going to use]
+
+]
+
+---
+# Implementation
+
+.scrollable90[
+.pull-left[
+```{r cv-glmnet}
+# tuning grid
+hyper_grid <- expand.grid(
+  alpha = seq(0, 1, by = .25),
+  lambda = c(0.1, 10, 100, 1000, 10000)
+)
+
+# perform resampling
+set.seed(123)
+cv_glmnet <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "glmnet", #<<
+  preProcess = c("zv", "center", "scale"),
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# best model
+cv_glmnet$results %>%
+  filter(
+    alpha == cv_glmnet$bestTune$alpha,
+    lambda == cv_glmnet$bestTune$lambda
+    )
+```
+]
+
+.pull-right[
+
+```{r cv-glmnet-plot, fig.height=5}
+# plot results
+plot(cv_glmnet)
+```
+
+.center.bold[Regularization gives us a slight improvement (~$1K)]
+
+]
+]
 
 ---
 class: center, middle, inverse
 
 .font300.white[Multivariate Adaptive Regression Splines]
+
+---
+# The idea
+
+* So far, we have tried to improve our linear model with various feature reduction and regularization approaches
+
+* However, we are still assuming linear relationships
+
+* The actual relationship(s) may have non-linear patterns that we cannot capture
+
+```{r non-linearity, fig.height=5, fig.width=9, echo=FALSE}
+# Simulate some nonlinear monotonic data
+set.seed(123)  # for reproducibility
+x <- seq(from = 0, to = 2 * pi, length = 500)
+y <- sin(x) + rnorm(length(x), sd = 0.3)
+df <- data.frame(x, y) %>%
+  filter(x < 6)
+
+ggplot(df, aes(x, y)) +
+  geom_point(size = 1, alpha = .5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Assumed linear relationship")
+```
+
+---
+# The idea
+
+.font120[
+* There are some traditional approaches we could take to capture non-linear relationships:
+   - polynomial relationships
+   - step function relationships
+]
+
+```{r traditional-nonlinear-approaches, fig.height=3.5, fig.width=12, echo=FALSE}
+p1 <- ggplot(df, aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  stat_smooth( method = "lm", se = FALSE, formula = y ~ poly(x, 2, raw = TRUE)) +
+  ggtitle("(A) Degree-2 polynomial regression")
+
+p2 <- ggplot(df, aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  stat_smooth( method = "lm", se = FALSE, formula = y ~ poly(x, 3, raw = TRUE)) +
+  ggtitle("(B) Degree-3 polynomial regression")
+
+# fit step function model (5 steps)
+step_fit <- lm(y ~ cut(x, 5), data = df)
+step_pred <- predict(step_fit, df)
+
+p3 <- ggplot(cbind(df, step_pred), aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = step_pred), size = 1, color = "blue") +
+  ggtitle("(C) Step function regression")
+
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+<br>
+
+.center.bold.blue[However, these require the user explicitly identify & incorporate `r anicon::cia("https://emojis.slackmojis.com/emojis/images/1542340473/4983/yuck.gif?1542340473", animate = "slow", size = 2)`]
+
+---
+# The idea
+
+.pull-left[
+
+* Multivariate adaptive regression splines (MARS) provide a convenient & automated approach to capture non-linearity
+
+* Easy transition from linear regression to non-linearity methods
+
+* Looks for .blue[knots] in predictors
+
+<br><br>
+
+\begin{equation}
+  \text{y} = 
+  \begin{cases}
+    1.0135408 - -0.8024042(\text{x} - 1.183606) & \text{x} < 1.183606, \\
+    1.0135408 + -0.4685200(\text{x} - 1.183606) & \text{x} > 1.183606
+  \end{cases}
+\end{equation}
+
+]
+
+.pull-right[
+
+```{r one-knot, echo=FALSE, fig.height=5}
+mars1 <- mda::mars(
+  df$x,
+  df$y,
+  nk = 3,
+  prune = FALSE
+  )
+
+df %>%
+  mutate(predicted = as.vector(mars1$fitted.values)) %>%
+  ggplot(aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = predicted), size = 1, color = "blue") +
+  ggtitle("One knot")
+```
+
+]
+
+---
+# The idea
+
+.pull-left[
+
+* Multivariate adaptive regression splines (MARS) provide a convenient & automated approach to capture non-linearity
+
+* Easy transition from linear regression to non-linearity methods
+
+* Looks for .blue[knots] in predictors
+
+]
+
+.pull-right[
+
+```{r two-knots, echo=FALSE, fig.height=5}
+mars2 <- mda::mars(
+  df$x,
+  df$y,
+  nk = 5,
+  prune = FALSE
+  )
+
+df %>%
+  mutate(predicted = as.vector(mars2$fitted.values)) %>%
+  ggplot(aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = predicted), size = 1, color = "blue") +
+  ggtitle("Two knots")
+```
+
+]
+
+---
+# The idea
+
+.pull-left[
+
+* Multivariate adaptive regression splines (MARS) provide a convenient & automated approach to capture non-linearity
+
+* Easy transition from linear regression to non-linearity methods
+
+* Looks for .blue[knots] in predictors
+
+]
+
+.pull-right[
+
+```{r three-knots, echo=FALSE, fig.height=5}
+mars3 <- mda::mars(
+  df$x,
+  df$y,
+  nk = 7,
+  prune = FALSE
+  )
+
+df %>%
+  mutate(predicted = as.vector(mars3$fitted.values)) %>%
+  ggplot(aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = predicted), size = 1, color = "blue") +
+  ggtitle("Three knots")
+```
+
+]
+
+---
+# The idea
+
+.pull-left[
+
+* Multivariate adaptive regression splines (MARS) provide a convenient & automated approach to capture non-linearity
+
+* Easy transition from linear regression to non-linearity methods
+
+* Looks for .blue[knots] in predictors
+
+]
+
+.pull-right[
+
+```{r four-knots, echo=FALSE, fig.height=5}
+mars3 <- mda::mars(
+  df$x,
+  df$y,
+  nk = 9,
+  prune = FALSE
+  )
+
+df %>%
+  mutate(predicted = as.vector(mars3$fitted.values)) %>%
+  ggplot(aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = predicted), size = 1, color = "blue") +
+  ggtitle("Three knots")
+```
+
+]
+
+---
+# The idea
+
+.pull-left[
+
+* Multivariate adaptive regression splines (MARS) provide a convenient & automated approach to capture non-linearity
+
+* Easy transition from linear regression to non-linearity methods
+
+* Looks for .blue[knots] in predictors
+
+]
+
+.pull-right[
+
+```{r nine-knots, echo=FALSE, fig.height=5}
+mars3 <- mda::mars(
+  df$x,
+  df$y,
+  nk = 20,
+  prune = FALSE
+  )
+
+df %>%
+  mutate(predicted = as.vector(mars3$fitted.values)) %>%
+  ggplot(aes(x, y)) +
+  geom_point(size = 1, alpha = .2) +
+  geom_line(aes(y = predicted), size = 1, color = "blue") +
+  ggtitle("Three knots")
+```
+
+]
 
 ---
 # Questions?
