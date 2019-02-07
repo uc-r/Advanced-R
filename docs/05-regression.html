@@ -110,7 +110,7 @@ class: center, middle, inverse
 &lt;img src="05-regression_files/figure-html/unnamed-chunk-1-1.png" style="display: block; margin: auto;" /&gt;
 
 
-* Model form: `\(y_i = \beta_0 + \beta_{1}x_{i1} + + \beta_{2}x_{i2} \cdots + \beta_{p}x_{ip} + \epsilon_i\)`
+* Model form: `\(y_i = \beta_0 + \beta_{1}x_{i1} + \beta_{2}x_{i2} \cdots + \beta_{p}x_{ip} + \epsilon_i\)`
 
 * Objective function: `\(\text{minimize} \bigg \{ SSE = \sum^n_{i=1} (y_i - \hat{y}_i)^2 \bigg \} \equiv \text{minimize MSE}\)`
 
@@ -344,6 +344,26 @@ summary(resamples(list(
 ```
 
 ]
+]
+
+---
+# Model concerns
+
+.pull-left[
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+.bold.center[With simplistic models comes many assumptions...often at the expense of model performance]
+
+]
+
+.pull-right[
+
+&lt;br&gt;
+
+&lt;img src="https://media1.tenor.com/images/3c888132eb6fbedec9a131bc55a05315/tenor.gif?itemid=10744949" style="display: block; margin: auto;" /&gt;
+
+
 ]
 
 ---
@@ -608,6 +628,19 @@ Steps:
 ]
 
 ---
+# R packages 📦
+
+&lt;br&gt;
+
+.font130[
+- Any package that implements PCA can be applied prior to modeling,
+
+- See [multivariate task view](	https://CRAN.R-project.org/view=Multivariate
+) on CRAN for options; however,...
+
+- .bold[caret] provides and integrated `method = "pcr"` that helps to automate the tuning process
+]
+---
 # Implementation
 
 .pull-left[
@@ -732,6 +765,54 @@ class: center, middle, inverse
 ]
 
 ---
+# The idea
+
+.pull-left[
+
+- A problem with PCR is that the PCs are developed independent of the response.
+
+- PLS 
+   - has similar intentions as PCR
+   
+   - finds PCs that maximize correlation with the response
+   
+   - .bold.blue[typically results in a stronger signal between PCs and response]
+
+]
+
+.pull-right[
+
+&lt;img src="05-regression_files/figure-html/pls-vs-pcr-relationship-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# R packages 📦
+
+.pull-left[
+
+## [`pls`](https://cran.r-project.org/package=pls)
+
+* **p**artial **l**east **s**quares
+
+* Original and primary implementation of PLS
+
+* Provides both PLS &amp; PCR capabilities 
+
+]
+.pull-right[
+
+## [Other pkgs](https://CRAN.R-project.org/view=Multivariate)
+
+* `ppls`: penalized partial least squares
+
+* `dr`: provides various dimension reduction regression options
+
+* `plsgenomics`: provides partial least squares analyses for genomics
+    
+]
+
+---
 # Implementation
 
 .pull-left[
@@ -772,7 +853,7 @@ plot(cv_pls)
 
 &lt;img src="05-regression_files/figure-html/pls-plot-1.png" style="display: block; margin: auto;" /&gt;
 
-.center.bold[Using PLS improves prediction error by an additional $1300]
+.center.bold[Using PLS improves prediction error by an additional $500]
 
 ]
 
@@ -963,6 +1044,35 @@ caret::getModelInfo("glmnet")$glmnet$parameters
 ]
 
 ---
+# R packages 📦
+
+.pull-left[
+
+## [`glmnet`](https://cran.r-project.org/package=glmnet)
+
+* original implementation of regularized regression in R
+
+* linear regression, logistic and multinomial regression models, Poisson regression and the Cox model
+
+* extremely efficient procedures for fitting the entire lasso or elastic-net regularization path
+
+]
+.pull-right[
+
+## [h2o](https://cran.r-project.org/package=h2o) 💧
+
+* java-based interface
+
+* Automated feature pre-processing &amp; validation procedures
+
+* Supports the following distributions: “guassian”, “binomial”, “multinomial”, “ordinal”, “poisson”, “gamma”, “tweedie”
+    
+]
+
+.center.bold[Other options exist (see __Regularized and Shrinkage Methods__ section of [Machine Learning task view](https://CRAN.R-project.org/view=MachineLearning
+)) but these are the preferred.]
+
+---
 # Implementation
 
 .scrollable90[
@@ -1060,8 +1170,8 @@ class: center, middle, inverse
 `\begin{equation}
   \text{y} = 
   \begin{cases}
-    1.0135408 + -0.8024042(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
-    1.0135408 + -0.4685200(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606
+    \beta_0 + \beta_1(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
+    \beta_0 + \beta_1(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606
   \end{cases}
 \end{equation}`
 
@@ -1089,9 +1199,9 @@ class: center, middle, inverse
 `\begin{equation}
   \text{y} = 
   \begin{cases}
-    1.2462966 + -0.6492884(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
-    1.2462966 + -1.0958180(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606 \quad \&amp; \quad \text{x} &lt; 4.898114, \\
-    1.2462966 + 1.4933304(4.898114 - \text{x}) &amp; \text{x} &gt; 4.898114
+    \beta_0 + \beta_1(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
+    \beta_0 + \beta_1(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606 \quad \&amp; \quad \text{x} &lt; 4.898114, \\
+    \beta_0 + \beta_1(4.898114 - \text{x}) &amp; \text{x} &gt; 4.898114
   \end{cases}
 \end{equation}`
 
@@ -1158,6 +1268,317 @@ class: center, middle, inverse
 
 &lt;img src="05-regression_files/figure-html/nine-knots-1.png" style="display: block; margin: auto;" /&gt;
 
+]
+
+---
+# R packages 📦
+
+.pull-left[
+## [`mda`](https://cran.r-project.org/package=mda)
+* **m**ixture **d**iscriminant **a**nalysis
+* Lightweight function `mars()`
+    
+* Gives quite similar results to Friedman's original FORTRAN program
+* No formula method
+]
+.pull-right[
+## [`earth`](http://www.milbo.users.sonic.net/earth/) 🌎
+* **e**nhanced **a**daptive **r**egression **t**hrough **h**inges
+* Derived from `mda::mars()`
+    
+* Support for GLMs (e.g., logistic regression)
+    
+* More bells and whistles than `mda::mars()`; for example,
+    - Variable importance scores
+    
+    - Support for `\(k\)`-fold cross-validation)
+    
+]
+
+---
+# Tuning parameters
+
+MARS models have two tuning parameters:
+
+.pull-left[
+
+1. .blue[_nprune_]: the maximum number of terms in the pruned model (including the intercept)
+
+2. .blue[_degree_]: the maximum degree of interaction
+
+]
+
+.pull-right[
+
+
+```r
+caret::getModelInfo("earth")$earth$parameters
+##   parameter   class          label
+## 1    nprune numeric         #Terms
+## 2    degree numeric Product Degree
+```
+
+]
+
+---
+# Implementation
+
+.scrollable90[
+.pull-left[
+
+```r
+# tuning grid
+hyper_grid &lt;- expand.grid(
+  nprune = seq(2, 50, length.out = 10) %&gt;% floor(),
+  degree = 1:3
+)
+
+# perform resampling
+set.seed(123)
+cv_mars &lt;- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+* method = "earth",
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# best model
+cv_mars$results %&gt;%
+  filter(
+    nprune == cv_mars$bestTune$nprune,
+    degree == cv_mars$bestTune$degree
+    )
+##   degree nprune     RMSE  Rsquared      MAE   RMSESD RsquaredSD    MAESD
+## 1      1     34 26705.66 0.8894754 16874.05 5521.644  0.0375183 1475.742
+```
+]
+
+.pull-right[
+
+
+```r
+# plot results
+plot(cv_mars)
+```
+
+&lt;img src="05-regression_files/figure-html/cv-mars-plot-1.png" style="display: block; margin: auto;" /&gt;
+
+.center.bold[MARS' non-linearity gives us a big improvement (~$4.5K)!]
+
+]
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Model Comparison]
+
+---
+# Comparing error distributions
+
+.pull-left[
+
+
+```r
+results &lt;- resamples(list(
+  OLS  = cv_model4, 
+  PCR  = cv_pcr, 
+  PLS  = cv_pls,
+  EN   = cv_glmnet,
+  MARS = cv_mars
+  ))
+
+summary(results)$statistics$RMSE
+##          Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA's
+## OLS  18834.46 28623.92 42438.30 44643.81 54707.54 97182.92    0
+## PCR  23982.16 27808.91 30312.96 32995.73 38845.12 51513.31    0
+## PLS  20677.75 24821.80 31198.85 32415.83 39860.46 49923.76    0
+## EN   18146.03 23290.31 28011.76 31223.90 38184.16 51833.34    0
+## MARS 20260.84 22463.84 24585.35 26705.66 30168.53 45845.05    0
+```
+
+]
+
+.pull-right[
+
+```r
+p1 &lt;- bwplot(results, metric = "RMSE")
+p2 &lt;- dotplot(results, metric = "RMSE")
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+```
+
+&lt;img src="05-regression_files/figure-html/compare-bwplot-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+.center.bold[Student's *t*-test or a rank sum test could also be used.]
+
+---
+class: center, middle, inverse
+
+.font300.white[Feature Interpretation]
+
+---
+# Feature importance
+
+.pull-left[
+
+.center.bold.font120[vip]
+
+* .bold[v]ariable .bold[i]mportance .bold[p]lots illustrate the influence each predictor has
+
+* many packages have their own vip plots
+
+* the __vip__ 📦 provides a common output
+
+* different models measure "importance" differently
+
+* we'll review this more indepth tomorrow
+
+]
+
+.pull-right[
+
+
+```r
+vip(cv_mars)
+```
+
+&lt;img src="05-regression_files/figure-html/mars-vip-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Feature importance
+
+&lt;img src="05-regression_files/figure-html/all-vip-1.png" style="display: block; margin: auto;" /&gt;
+
+
+---
+# Feature importance
+
+.scrollable90[
+.pull-left.font130[
+
+* Some models do not perform feature selection
+  - OLS
+  - PCR
+  - PLS
+
+]
+
+.pull-right[
+
+&lt;img src="05-regression_files/figure-html/no-feature-selection-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+# Feature importance
+
+.scrollable90[
+.pull-left.font120[
+
+* Some models do not perform feature selection
+  - OLS
+  - PCR
+  - PLS
+  
+* Whereas some models do
+  - Regularized regression
+  - MARS
+
+]
+
+.pull-right[
+
+&lt;img src="05-regression_files/figure-html/mars-feature-selection-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+# Feature effects
+
+.pull-left[
+
+* feature effects measures the relationship between a feature and the target variable
+
+* most common approach is a .bold[p]artial .bold[d]ependence .bold[p]lot
+
+* computs the average response value when all observations use a particular value for a given feature
+
+* we will review this more tomorrow
+
+]
+
+.pull-right[
+
+
+```r
+pdp::partial(cv_model2, pred.var = "Gr_Liv_Area", grid.resolution = 10) %&gt;% 
+  autoplot()
+```
+
+&lt;img src="05-regression_files/figure-html/ols-pdp-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Feature effects
+
+&lt;br&gt;&lt;br&gt;
+
+&lt;img src="05-regression_files/figure-html/all-pdps, -1.png" style="display: block; margin: auto;" /&gt;
+
+---
+# Feature effects
+
+Assess the interaction of the top 2 predictors:
+
+
+```r
+pdp::partial(cv_mars, pred.var = c("Gr_Liv_Area", "Year_Built"), grid.resolution = 10) %&gt;% 
+  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+```
+
+&lt;img src="05-regression_files/figure-html/interaction-pdp-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+class: center, middle, inverse
+
+.font300.white[Wrapping up]
+
+---
+# Summary
+
+.pull-left[
+* Ordinary least squares
+   - simple but lots of assumptions
+   - typically poor predictive accuracy
+
+* Principal Component Regression
+   - minimizes multicollinearity
+   - helps when `\(p &gt;&gt; n\)`
+
+* Partial Least Squares
+   - same benefits as PCR but
+   - creates stronger signal btwn PCs and target
+]
+
+.pull-right[
+* Regularized Regression
+   - minimizes multicollinearity
+   - helps when `\(p &gt;&gt; n\)`
+   - can provide automated feature selection
+
+* Multivariate Adaptive Regression Splines
+   - captures non-linear relationships
+   - can automatically capture interactions
+   - provides automated feature selection
 ]
 
 ---

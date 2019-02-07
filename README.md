@@ -3,15 +3,14 @@
 
 ### Course Description
 
-Welcome to Advanced R\! This short course builds onto the [Intro to
-R](https://github.com/uc-r/Intro-R) and [Intermediate
+Welcome to Advanced Analytics with R\! This short course builds onto the
+[Intro to R](https://github.com/uc-r/Intro-R) and [Intermediate
 R](https://github.com/uc-r/Intermediate-R) courses and provides a
-hands-on approach to moving from journeyman to master with the R
+hands-on approach to applying advanced analytic techniques with the R
 programming language. In this course you will gain deeper knowledge
-around writing good functions, applying functional programming, working
-with R’s various classes, tidy eval, measuring and improving code
-performance, and writing R packages. The following is an outline of the
-material covered in this training:
+around the analytic modeling process and apply various supervised and
+unsupervised machine learning algorithms. The following is an outline of
+the material covered in this training:
 
 **Day
 1**
@@ -25,7 +24,7 @@ material covered in this training:
 | [Supervised modeling process](https://uc-r.github.io/Advanced-R/03-supervised-modeling-process.html) | 11:00 - 12:00 |
 | Lunch                                                                                                | 12:00 - 1:00  |
 | [Feature & target engineering](https://uc-r.github.io/Advanced-R/04-engineering.html)                |  1:00 - 2:00  |
-| Regression & cousins                                                                                 |  2:00 - 4:00  |
+| [Regression & cousins](https://uc-r.github.io/Advanced-R/05-regression.html)                         |  2:00 - 4:00  |
 | Q\&A                                                                                                 |  4:00 - 4:30  |
 
 **Day 2**
@@ -49,9 +48,7 @@ To prepare for this course please complete the following ***prior*** to
 the day of class:
 
 1.  Download the class material at [TBD](). This will provide you with
-    the data and R scripts to follow along during class. I have also
-    included handy cheat sheets that you can reference throughout
-    different sections.
+    the data and R scripts to follow along during class.
 
 2.  All slides are available via the hyperlinks in the schedule above so
     that you can follow along.
@@ -66,8 +63,10 @@ the day of class:
         version](https://www.rstudio.com/products/rstudio/download/#download)\]
 
 4.  This course makes ***strong*** assumptions about your prior
-    knowledge. To ensure your success, be sure that you have reviewed
-    and are comfortable with the material covered in the [Intro to
+    knowledge such as your ability to define functions, manage R
+    objects, control the flow of a program, and other basic tasks. To
+    ensure your success, be sure that you have reviewed and are
+    comfortable with the material covered in the [Intro to
     R](https://github.com/uc-r/Intro-R) and [Intermediate
     R](https://github.com/uc-r/Intermediate-R) courses.
 
