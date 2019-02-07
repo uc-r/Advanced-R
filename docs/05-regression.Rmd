@@ -1158,7 +1158,7 @@ gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
 \begin{equation}
   \text{y} = 
   \begin{cases}
-    1.0135408 - -0.8024042(\text{x} - 1.183606) & \text{x} < 1.183606, \\
+    1.0135408 + -0.8024042(1.183606 - \text{x}) & \text{x} < 1.183606, \\
     1.0135408 + -0.4685200(\text{x} - 1.183606) & \text{x} > 1.183606
   \end{cases}
 \end{equation}
@@ -1195,6 +1195,17 @@ df %>%
 * Easy transition from linear regression to non-linearity methods
 
 * Looks for .blue[knots] in predictors
+
+<br><br>
+
+\begin{equation}
+  \text{y} = 
+  \begin{cases}
+    1.2462966 + -0.6492884(1.183606 - \text{x}) & \text{x} < 1.183606, \\
+    1.2462966 + -1.0958180(\text{x} - 1.183606) & \text{x} > 1.183606 \quad \& \quad \text{x} < 4.898114, \\
+    1.2462966 + 1.4933304(4.898114 - \text{x}) & \text{x} > 4.898114
+  \end{cases}
+\end{equation}
 
 ]
 

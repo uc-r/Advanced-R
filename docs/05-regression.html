@@ -1060,7 +1060,7 @@ class: center, middle, inverse
 `\begin{equation}
   \text{y} = 
   \begin{cases}
-    1.0135408 - -0.8024042(\text{x} - 1.183606) &amp; \text{x} &lt; 1.183606, \\
+    1.0135408 + -0.8024042(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
     1.0135408 + -0.4685200(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606
   \end{cases}
 \end{equation}`
@@ -1083,6 +1083,17 @@ class: center, middle, inverse
 * Easy transition from linear regression to non-linearity methods
 
 * Looks for .blue[knots] in predictors
+
+&lt;br&gt;&lt;br&gt;
+
+`\begin{equation}
+  \text{y} = 
+  \begin{cases}
+    1.2462966 + -0.6492884(1.183606 - \text{x}) &amp; \text{x} &lt; 1.183606, \\
+    1.2462966 + -1.0958180(\text{x} - 1.183606) &amp; \text{x} &gt; 1.183606 \quad \&amp; \quad \text{x} &lt; 4.898114, \\
+    1.2462966 + 1.4933304(4.898114 - \text{x}) &amp; \text{x} &gt; 4.898114
+  \end{cases}
+\end{equation}`
 
 ]
 
