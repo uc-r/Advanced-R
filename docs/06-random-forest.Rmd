@@ -1987,6 +1987,59 @@ caret::getModelInfo("ranger")$ranger$parameters
 ]
 
 ---
+# Tuning in caret `r emo::ji("carrot")`
+
+.scrollable90[
+.pull-left[
+Within __caret__, we can tune...
+
+* `mtry`
+
+* `splitrule`
+
+* `min.node.size`
+
+...for `method = "ranger"`
+
+]
+
+.pull-right[
+
+.center.bold[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~8 min `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+```{r ranger-tuning-via-caret, eval=FALSE}
+# create a resampling method
+cv <- trainControl(
+  method = "repeatedcv", 
+  number = 10, 
+  repeats = 5
+  )
+
+# tuning grid
+hyper_grid <- expand.grid(
+  mtry = floor(n_features * c(.15, .20, .25)),
+  min.node.size = c(1, 3, 5),
+  splitrule = c("variance", "extratrees")
+)
+
+# perform resampling
+set.seed(123)
+cv_ranger <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "ranger",
+  tuneGrid = hyper_grid,
+  metric = "RMSE",
+  num.trees = 1000, #<<
+  respect.unordered.factors = 'order' #<<
+  )
+```
+
+]
+]
+
+---
 # Feature Importance <a href="https://koalaverse.github.io/vip/index.html"><img src="images/logo-vip.png" class="pdp-hex", align="right"></a>
 
 .pull-left[
@@ -2112,22 +2165,8 @@ fit_final %>%
 
 .pull-right[
 
-```{r interaction-pdp-output, echo=FALSE}
-pdp <- fit_final %>%
-  partial(
-    pred.var = c("Gr_Liv_Area", "Year_Built"),
-    train = as.data.frame(ames_train)
-    )
-
-plotPartial(
-  pdp,
-  zlab = "Sale_Price",
-  levelplot = FALSE, 
-  drape = TRUE, 
-  colorkey = FALSE,
-  screen = list(z = 50, x = -60)
-  )
-
+```{r interaction-pdp-output, echo=FALSE, out.height="90%", out.width="90%"}
+knitr::include_graphics("images/interaction-pdp-output-1.png")
 ```
 
 ]
@@ -2222,3 +2261,10 @@ background-size: cover
 <br><br><br><br><br><br><br><br><br><br><br><br>
 .font300.bold[`r anicon::nia("Questions?", animate = "pulse")`]
 
+---
+# Back home
+
+<br><br><br><br>
+[.center[`r anicon::faa("home", size = 10, animate = FALSE)`]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]

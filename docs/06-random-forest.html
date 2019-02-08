@@ -1577,6 +1577,60 @@ caret::getModelInfo("ranger")$ranger$parameters
 ]
 
 ---
+# Tuning in caret 🥕
+
+.scrollable90[
+.pull-left[
+Within __caret__, we can tune...
+
+* `mtry`
+
+* `splitrule`
+
+* `min.node.size`
+
+...for `method = "ranger"`
+
+]
+
+.pull-right[
+
+.center.bold[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~8 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+# create a resampling method
+cv &lt;- trainControl(
+  method = "repeatedcv", 
+  number = 10, 
+  repeats = 5
+  )
+
+# tuning grid
+hyper_grid &lt;- expand.grid(
+  mtry = floor(n_features * c(.15, .20, .25)),
+  min.node.size = c(1, 3, 5),
+  splitrule = c("variance", "extratrees")
+)
+
+# perform resampling
+set.seed(123)
+cv_ranger &lt;- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "ranger",
+  tuneGrid = hyper_grid,
+  metric = "RMSE",
+* num.trees = 1000,
+* respect.unordered.factors = 'order'
+  )
+```
+
+]
+]
+
+---
 # Feature Importance &lt;a href="https://koalaverse.github.io/vip/index.html"&gt;&lt;img src="images/logo-vip.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
 
 .pull-left[
@@ -1719,7 +1773,7 @@ fit_final %&gt;%
 
 .pull-right[
 
-
+&lt;img src="images/interaction-pdp-output-1.png" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
 
 ]
 
@@ -1806,6 +1860,14 @@ background-size: cover
 
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
 .font300.bold[<span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">Questions?</span>]
+
+---
+# Back home
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+[.center[<span>&lt;i class="fas  fa-home fa-10x faa-FALSE animated "&gt;&lt;/i&gt;</span>]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
     </textarea>
 <script src="libs/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
