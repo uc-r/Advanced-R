@@ -2005,7 +2005,9 @@ Within __caret__, we can tune...
 
 .pull-right[
 
-.center.bold[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~8 min `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+.center.bold[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~28 min `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+.center[this is why we like OOB errors!]
 
 ```{r ranger-tuning-via-caret, eval=FALSE}
 # create a resampling method
