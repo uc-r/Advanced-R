@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decision Trees, Bagging, &amp; Random Forests</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-03-01" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: clear, center, middle
+
+background-image: url(images/rf-icon.jpg)
+background-position: center
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font300.white[Decision Trees, Bagging, &lt;br&gt;&amp; Random Forests]
+
+---
+# Introduction
+
+.pull-left[
+
+.center.bold.font120[Thoughts]
+
+Random forests are an ensemble method that:
+
+* provide competitive accuracy
+
+* provide good _out-of-the-box_ performance
+
+* capture non-linear, non-monotonic relationships
+
+* automatically capture interactions
+
+* easy to tune (relatively speaking)
+
+* require minimal, if any, pre-processing
+
+]
+
+--
+
+.pull-right[
+
+.center.bold.font120[Overview]
+
+* Provide solid understanding of:
+   1. decision trees
+   2. bagging
+   3. random forests
+   
+* Apply a random forest model   
+
+]
+
+---
+class: clear, center, middle
+
+background-image: url(images/single-tree.gif)
+background-size: cover
+
+.font300.white[Decision Trees]
+
+???
+
+Image credit: [giphy](https://giphy.com/gifs/tree-U85Z0lxOwDoys?utm_source=media-link&amp;utm_medium=landing&amp;utm_campaign=Media%20Links&amp;utm_term=)
+
+---
+
+# Basic Idea
+
+
+&lt;img src="images/dt-01.png" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Will a customer redeem a coupon]]]
+
+---
+
+# A .red[ruleset] model
+
+&lt;img src="images/dt-03.png" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
+
+.font90[`if Loyal Customer = Yes and Household income &gt;= $150K and Shopping mode = store then coupon redemption = Yes`]
+
+
+---
+
+# Terminology
+
+&lt;img src="images/dt-02.png" width="90%" height="90%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Growing the tree
+
+.pull-left[
+
+### Algorithms
+
+- ID3 (Iterative Dichotomiser 3)
+- C4.5 (successor of ID3)
+- CART (Classification And Regression Tree)
+- CHAID (CHi-squared Automatic Interaction Detector)
+- MARS: (Multivariate Adaptive Regression Splines)
+- Conditional Inference Trees
+- and more...
+
+]
+
+---
+
+# Growing the tree
+
+.pull-left[
+
+### Algorithms
+
+- ID3 (Iterative Dichotomiser 3)
+- C4.5 (successor of ID3)
+- .bold.blue[CART (Classification And Regression Tree)]
+- CHAID (CHi-squared Automatic Interaction Detector)
+- MARS: (Multivariate Adaptive Regression Splines)
+- Conditional Inference Trees
+- and more...
+
+]
+
+.pull-right[
+
+### CART Features <span>&lt;i class="fas  fa-shopping-cart faa-passing animated faa-slow "&gt;&lt;/i&gt;</span>
+
+- Classification and regression trees
+- Continuous and discrete features
+- Partitioning
+   - Greedy top-down
+   - Strictly binary splits (tends to produce tall/deep trees)
+   - Variance reduction in regression trees
+   - Gini impurity in classification trees
+- Cost complexity pruning 
+- [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;(Breiman, 1984)</span>](https://www.taylorfrancis.com/books/9781351460491)
+
+]
+
+&lt;br&gt;
+.center[.content-box-gray[.bold[Most common decision tree algorithm]]]
+
+---
+
+# Best .red[<span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">Binary</span>] Partitioning
+
+.pull-left[
+
+.center.font130.bold[Regression tree]
+
+&lt;img src="images/regression-partition.png" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+.center.font130.bold[Classification tree]
+
+&lt;img src="images/classification-partition.png" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+&lt;br&gt;
+.center[.content-box-gray[.bold[Objective: Minimize disimilarity in terminal nodes]]]
+
+
+---
+
+# Best .red[Binary] Partitioning
+
+
+.pull-left[
+&lt;br&gt;
+- __Numeric feature__: Numeric split to minimize loss function
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+- __Binary feature__: Category split to minimize loss function
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+- __Multiclass feature__: Order feature classes based on mean target variable (regression) or class proportion (classification) and choose split to minimize loss function ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;See ESL, section 9.2.4 for details</span>](https://web.stanford.edu/~hastie/ElemStatLearn/)).
+
+]
+
+.pull-right[
+
+&lt;img src="images/splitting-rules.png" width="55%" height="55%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# How deep to grow a tree?
+
+Say we have the given data generated from the underlying .blue["truth"] function
+
+&lt;br&gt;&lt;br&gt;
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-7-1.png" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Depth = 1 (decision .red[stump] <span class=" faa-pulse animated-hover " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/stump.png" style="height:1em; width:auto; "/&gt;</span>)
+
+.scrollable90[
+.pull-left[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-8-1.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+```
+## 
+## Model formula:
+## y ~ x
+## 
+## Fitted party:
+## [1] root
+## |   [2] x &gt;= 3.07863: -0.665 (n = 255, err = 95.5)
+## |   [3] x &lt; 3.07863: 0.640 (n = 245, err = 75.9)
+## 
+## Number of inner nodes:    1
+## Number of terminal nodes: 2
+```
+
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-9-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+
+# Depth = 3 <span class=" faa-pulse animated-hover " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/small-tree-icon.png" style="height:1em; width:auto; "/&gt;</span>
+
+.scrollable90[
+.pull-left[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-10-1.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+```
+## 
+## Model formula:
+## y ~ x
+## 
+## Fitted party:
+## [1] root
+## |   [2] x &gt;= 3.07863
+## |   |   [3] x &gt;= 3.65785
+## |   |   |   [4] x &lt; 5.53399: -0.948 (n = 149, err = 40.0)
+## |   |   |   [5] x &gt;= 5.53399: -0.316 (n = 60, err = 15.6)
+## |   |   [6] x &lt; 3.65785
+## |   |   |   [7] x &lt; 3.20455: -0.476 (n = 10, err = 0.9)
+## |   |   |   [8] x &gt;= 3.20455: -0.130 (n = 36, err = 9.0)
+## |   [9] x &lt; 3.07863
+## |   |   [10] x &lt; 0.52255
+## |   |   |   [11] x &lt; 0.28331: 0.142 (n = 23, err = 4.8)
+## |   |   |   [12] x &gt;= 0.28331: 0.390 (n = 19, err = 5.1)
+## |   |   [13] x &gt;= 0.52255
+## |   |   |   [14] x &gt;= 2.26018: 0.440 (n = 65, err = 13.7)
+## |   |   |   [15] x &lt; 2.26018: 0.852 (n = 138, err = 36.6)
+## 
+## Number of inner nodes:    7
+## Number of terminal nodes: 8
+```
+
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+
+# Depth = 20 (.red[complex tree]  <span class=" faa-pulse animated-hover " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/large-tree-icon.png" style="height:1em; width:auto; "/&gt;</span>)
+
+.scrollable90[
+.pull-left[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-12-1.png" height="100%" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-13-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+
+# .red[Two Predictor] Decision Boundaries
+
+.pull-left[
+
+### Classification problem: Iris data
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-14-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+
+---
+
+# .red[Two Predictor] Decision Boundaries
+
+.pull-left[
+
+### Classification problem: Iris data
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-15-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+### Classification tree
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-16-1.png" height="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Minimize overfitting
+
+.pull-left[
+
+.font110[Must balance the depth and complexity of the tree to .bold[generalize] to unseen data]
+
+2 main options:
+
+* Early stopping 
+   * Restrict tree depth
+   * Restrict node size
+
+* Pruning
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-17-1.png" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Trees have a tendency to overfit]]]
+
+]
+
+---
+
+# Minimize overfitting: Early stopping <span>&lt;i class="fas  fa-stop-circle faa-tada animated-hover " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue[Limit tree depth]: Stop splitting after a certain depth
+
+&lt;img src="06-random-forest_files/figure-html/maxdepth-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+--
+
+.pull-right[
+
+.blue[Minimum node “size”]: Do not split intermediate node which contains too few data points
+
+&lt;img src="06-random-forest_files/figure-html/minbucket-1.gif" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+
+---
+
+# Minimize overfitting: Pruning <span>&lt;i class="fas  fa-cut faa-tada animated-hover " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+1. .font120[Grow a very large tree]
+
+
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-18-1.png" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Deep trees overfit]]]
+
+]
+
+---
+
+# Minimize overfitting: Pruning <span>&lt;i class="fas  fa-cut faa-tada animated-hover " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+1. Grow a very large tree
+
+2. Prune it back with a _.red[cost complexity parameter]_ ( `\(\alpha\)` ) `\(\times\)` number of terminal nodes ( `\(T\)` ) to find an optimal subtree:
+  - Very similar to lasso penalty in regularized regression
+  - Large `\(\alpha =\)` small tree
+  - Small `\(\alpha =\)` large tree
+  - Find optimal `\(\alpha\)` with cross validation
+
+$$ \text{minimize: loss function} + \alpha |T|  $$
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-19-1.png" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Penalize depth to generalize]]]
+
+]
+
+---
+
+# Feature/Target Pre-processing Considerations
+
+&lt;br&gt;
+
+* __Monotonic transformations__ (i.e. log, exp, sqrt): .blue[Not required] to meet algorithm assumptions as in many parametric models; only shifts the optimal split points. 
+
+* __Removing outliers__: .blue[unnecessary] as the emphasis is on a single binary split and outliers are not going to bias that split.
+
+* __One-hot encoding__: .blue[unncessary] and actually forces artificial relationships between categorical levels.  Also, by increasing `\(p\)`, we reduce the probability that influential levels and variable interactions will be identified.
+
+* __Missing values__: .blue[unnecessary] as most algorithms will 1) create new "missing" class for categorical variables, 2) auto-impute for continuous variables, or 3) use *surrogate* splits
+
+---
+
+# Variable importance 
+
+Once we have a final model, we can find the most .red[influential variables] based on those that have the .red[largest reduction] in our loss function:
+
+.pull-left[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-20-1.png" height="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+
+```
+##    Variable Importance
+## 1        rm 23825.9224
+## 2     lstat 15047.9426
+## 3       dis  5385.2076
+## 4     indus  5313.9748
+## 5       tax  4205.2067
+## 6   ptratio  4202.2984
+## 7       nox  4166.1230
+## 8       age  3969.2913
+## 9      crim  2753.2843
+## 10       zn  1604.5566
+## 11      rad  1007.6588
+## 12    black   408.1277
+```
+
+]
+
+---
+
+# Variable importance 
+
+Once we have a final model, we can find the most .red[influential variables] based on those that have the .red[largest reduction] in our loss function:
+
+.pull-left[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-22-1.png" height="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-23-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Strengths &amp; Weaknesses 
+
+.pull-left[
+
+### Strengths <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>
+
+- .green[Small trees are easy to interpret]
+
+- .green[Trees scale well to large _N_] (fast!!)
+
+- .green[Can handle data of all types] (i.e., requires little, if any, preprocessing)
+
+- .green[Automatic variable selection]
+
+- .green[Can handle missing data]
+
+- .green[Completely nonparametric]
+
+]
+
+--
+
+.pull-right[
+
+### Weaknesses <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1.25em; width:auto; "/&gt;</span>
+
+- .red[Large trees can be difficult to interpret]
+
+- .red[All splits depend on previous splits] (i.e. capturing interactions <span>&lt;i class="fas  fa-thumbs-up faa-FALSE animated " style=" color:green;"&gt;&lt;/i&gt;</span>; additive models <span>&lt;i class="fas  fa-thumbs-down faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>)
+
+- .red[Trees are step functions] (i.e., binary splits)
+
+- .red[Single trees typically have poor predictive accuracy]
+
+- .red[Single trees have high variance] (easy to overfit to training data)
+
+]
+
+---
+class: clear, center, middle
+
+background-image: url(images/bagging-icon.jpg)
+background-size: cover
+
+.font300.white[Bagging]
+
+???
+
+Image credit: [unsplash](https://unsplash.com/photos/19SC2oaVZW0)
+
+---
+
+# The problem with single trees
+
+.pull-left[
+
+.center[.font120[.bold[Single pruned trees are poor predictors]]]
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-24-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+.center[.font120[.bold[Single deep trees are noisy]]]
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-25-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+.center[.content-box-gray[Bagging uses this high variance to our advantage <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]]
+
+---
+
+# .red[B]ootstrap .red[Agg]regat.red[ing]: wisdom of the crowd
+
+.pull-left[
+
+1. Sample records with replacement (aka "bootstrap" the training data)
+
+2. .white[Fit an overgrown tree to the resampled data set]
+
+3. .white[Average predictions]
+
+]
+
+.pull-right[
+
+&lt;img src="images/bagging-fig1.png" width="1379" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+
+# .red[B]ootstrap .red[Agg]regat.red[ing]: wisdom of the crowd
+
+.pull-left[
+
+1. .opacity[.grey[Sample records with replacement (aka "bootstrap" the training data)]]
+
+2. Fit an <span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">overgrown</span> tree to each resampled data set
+
+3. .white[Average predictions]
+
+]
+
+.pull-right[
+
+&lt;img src="images/bagging-fig2.png" width="1384" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# .red[B]ootstrap .red[Agg]regat.red[ing]: wisdom of the crowd
+
+.pull-left[
+
+1. .opacity[.grey[Sample records with replacement (aka "bootstrap" the training data)]]
+
+2. Fit an <span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">overgrown</span> tree to each resampled data set
+
+3. .white[Average predictions]
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-28-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# .red[B]ootstrap .red[Agg]regat.red[ing]: wisdom of the crowd
+
+.pull-left[
+
+1. .opacity[.grey[Sample records with replacement (aka "bootstrap" the training data)]]
+
+2. .opacity[.grey[Fit an overgrown tree to each resampled data set]]
+
+3. Average predictions
+
+]
+
+.pull-right[
+
+&lt;img src="images/bagging-fig3.png" width="1385" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# .red[B]ootstrap .red[Agg]regat.red[ing]: wisdom of the crowd
+
+.pull-left[
+
+.font120.bold[As we add more trees...]
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-30-1.gif" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+.font120.bold[our average prediction error reduces]
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-31-1.gif" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.center[.content-box-gray[.bold[Wisdom of the crowd in action]]]
+
+---
+
+# However, a .red[problem remains] 
+
+.bold[Bagging results in tree correlation...]
+
+&lt;img src="images/tree-correlation-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[which prevents bagging from optimally reducing variance of the predictive values]] <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045851/836/headbang.gif?1471045851" style="height:3em; width:auto; "/&gt;</span>]
+
+---
+class: clear, center, middle
+
+background-image: url(images/rf-icon2.jpg)
+background-size: cover
+
+.font300.white[Random Forests]
+
+???
+
+Image credit: [unsplash](https://unsplash.com/photos/5KvErlbdeyo)
+
+---
+
+# Idea
+
+.pull-left[
+
+### Split-variable randomization
+
+* .font120[Follow a similar bagging process but... ]
+
+]
+
+.pull-right[
+
+&lt;img src="images/bagged-trees-illustration.png" width="1484" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Bagging produces many correlated trees]]]
+
+]
+
+---
+# Idea
+
+.pull-left[
+
+### Split-variable randomization
+
+* Follow a similar bagging process but...
+
+* each time a split is to be performed, the search for the split variable is .blue[limited to a random subset of *m* of the *p* variables]
+   - regression trees: `\(m = \frac{p}{3}\)`
+   - classification trees: `\(m = \sqrt{p}\)` 
+   - `\(m\)` is commonly referred to as .blue[___mtry___] .white[
+
+* Bagging introduces randomness into the rows of the data
+
+* Random forest introduces randomness into the rows and columns of the data
+]
+]
+
+.pull-right[
+
+&lt;img src="images/rf-trees-illustration.png" width="1491" style="display: block; margin: auto;" /&gt;
+
+.center[.content-box-gray[.bold[Random Forests produce many unique trees]]]
+
+]
+
+---
+
+# Bagging vs Random Forest
+
+.pull-left[
+.opacity[
+### Split-variable randomization
+
+* Follow a similar bagging process but...
+
+* each time a split is to be performed, the search for the split variable is limited to a random subset of *m* of the *p* variables
+]
+
+* Bagging introduces .red[randomness into the rows] of the data
+
+* Random forest introduces .red[randomness into the rows and columns] of the data
+
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-35-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+.center[.bold[.green[Combined, this provides a more diverse set of trees that almost always lowers our prediction error.]]]
+
+---
+
+# Out-of-bag <span>&lt;i class="fas  fa-shopping-bag faa-pulse animated-hover " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+.font80[
+
+* For large enough N, on average, 63.21% or the original records end up in any bootstrap sample
+
+* Roughly 36.79% of the observations are not used in the construction of a particular tree
+
+* These observations are considered .red[out-of-bag (OOB)] and can be used for efficient assessment of model performance (.bold[unstructured, but free, cross-validation])]
+
+.font90[.blue[Pro tip:
+   - When N is small, OOB is less reliable than validation
+   - As N increases, OOB is far more efficient than *k*-fold CV
+   - When the number of trees are about 3x the number needed for the random forest to stabilize, the OOB error estimate is equivalent to leave-one-out cross-validation error.
+   
+]
+]
+]
+
+.pull-right[
+
+
+&lt;img src="06-random-forest_files/figure-html/unnamed-chunk-36-1.gif" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+
+--
+
+.pull-left[
+
+- .blue[Number of trees]
+
+- .blue[mtry]
+
+- .grey[Node size]
+
+- .grey[Sampling scheme]
+
+- .green[Split rule]
+
+]
+
+.pull-right[
+
+- .blue[Typically have the largest impact on predictive accuracy.] &lt;br&gt;
+
+- .grey[Tend to have marginal impact on predictive accuracy but still worth exploring. Can also increase computational efficiency.] &lt;br&gt;
+
+- .green[Generally used to increase computational efficiency]
+
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+
+.font90[
+.pull-left[
+
+- .blue.bold[Number of trees] `\(^a\)` 
+
+   - .bold[Why]: stabalize the error
+   - .bold[Rule of thumb]: start with `\(p \times 10\)` trees and adjust as necessary
+   - .bold[Caveats]:
+       - small mtry and sample size values and/or larger node size values result in less correlated trees; therefore requiring more trees to converge.
+       - more trees provide more robust/stable error &amp; variable importance measures
+   - .bold[Impact on computation time]: increases linearly with the number of trees
+
+]
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/tuning-trees-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+.font70[ *a) Technically, the number of trees is not a real tuning parameter but it is important to have a sufficient number for the estimate to stabilize.*]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+
+.font90[
+.pull-left[
+
+- .blue.bold[Mtry] 
+
+   - .bold[Why]: balance low tree correlation and reasonable predictive strength
+   - .bold[Rule of thumb]: 
+      - Regression default: `\(\frac{p}{3}\)` 
+      - Classification default: `\(\sqrt{p}\)`
+      - start with 5 values evenly spaced across the range from 2 to *p* (include the default)
+   - .bold[Caveats]:
+      - few relevant predictors: &amp;nbsp;&amp;nbsp; <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> mtry  
+      - many relevant predictors: <span>&lt;i class="fas  fa-arrow-down faa-FALSE animated "&gt;&lt;/i&gt;</span> mtry 
+   - .bold[Impact on computation time]: increases approx linearly with higher mtry values.
+
+]
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/tuning-mtry-1.png" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+
+.font90[
+.pull-left[
+
+- .blue.bold[Node size] 
+
+   - .bold[Why]: balance tree complexity 
+   - .bold[Rule of thumb]: 
+      - Regression default: 5 
+      - Classification default: 1
+      - start with 3 values (1, 5, 10)
+   - .bold[Caveats]:
+      - many noisy predictors: <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> node size 
+      - if higher mtry values are performing best, <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> node size 
+   - .bold[Impact on computation time]: increases approx exponentially with small node sizes.
+      - for very large data sets: <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> node size
+
+]
+]
+
+.pull-right[
+
+
+&lt;img src="06-random-forest_files/figure-html/tuning-node-size-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+&lt;br&gt;&lt;br&gt;
+
+.font90[
+
+- .blue.bold[.opacity20[Node size] / Required split size / Max number of nodes / Max depth] 
+
+   - Alternative parameters exist that can control tree complexity; however, most preferred random forest packages (__ranger__, __H2O__) focus on node size.
+   - See [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;(Probst et al., 2018)</span>](https://arxiv.org/pdf/1804.03515.pdf) for short discussion.
+   
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.
+
+.font90[
+.pull-left[
+
+- .blue.bold[Sampling scheme] 
+
+   - .bold[Why]: balance low tree correlation and reasonable predictive strength
+   - .bold[Rule of thumb]: 
+      - default value is 100% with replacement
+      - assess 3-4 values ranging from 25%-100%
+   - .bold[Caveats]:
+      - if you have dominating features - <span>&lt;i class="fas  fa-arrow-down faa-FALSE animated "&gt;&lt;/i&gt;</span> sample size to minimize tree correlation
+      - if you have many categorical features with varying number of levels - try sampling without replacement
+   - .bold[Impact on computation time]: 
+      - for very large data sets: <span>&lt;i class="fas  fa-arrow-down faa-FALSE animated "&gt;&lt;/i&gt;</span> sample size to decrease compute time 
+
+]
+]
+
+.pull-right[
+
+&lt;img src="06-random-forest_files/figure-html/tuning-sampling-scheme-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+Random forests provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance but there are a few parameters we can tune to increase performance.&lt;br&gt;&lt;br&gt;
+
+.font90[
+
+- .blue.bold[Split rule] 
+
+   - .bold[Why]: Balance tree correlation and run time
+   - .bold[Rule of thumb]:
+      - Regression default: variance 
+      - Classification default: Gini / cross-entropy
+   - .bold[Caveats]:
+      - Default split rules favor variables with many possible splits (continuous &amp; categorical w/many levels)
+      - Try extra random tree splitting [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;(Geurts et al., 2006)</span>](https://link.springer.com/article/10.1007/s10994-006-6226-1) if:
+         - many categorical variables with few levels
+         - need to reduce run time
+   - .bold[Impact on computation time]: Completely random split rule minimizes compute time since optimal split is not assessed; splits are made at random 
+
+]
+
+---
+
+# Variable Importance
+
+We have two approaches for .blue[model specific variable importance] with random forests:
+
+.font80[
+.pull-left[
+
+.font120.bold[Impurity]
+
+1. At each split in each tree, compute the improvement in the split-criterion
+2. Average the improvement made by each variable across all the trees that the variable is used
+3. The variables with the largest average decrease in MSE are considered most important.
+
+&lt;br&gt;
+
+Notes:
+
+- more trees lead to more stable vi estimates
+- smaller mtry values lead to more equal vi estimates across all variables
+- bias towards variables with many categories or numeric values
+
+]
+
+.pull-right[
+
+.font120.bold[Permutation] 
+
+1. For each tree, the OOB sample is passed down the tree and the prediction accuracy is recorded. 
+2. Then the values for each variable (one at a time) are randomly permuted and the accuracy is again computed. 
+3. The decrease in accuracy as a result of this randomly “shaking up” of variable values is averaged over all the trees for each variable. 
+4. The variables with the largest average decrease in accuracy are considered most important.
+
+Notes:
+
+- more trees lead to more stable vi estimates
+- smaller mtry values lead to more equal vi estimates across all variables
+- categorical variables with many levels can have high variance vi estimates
+
+]
+]
+
+---
+
+# Variable Importance
+
+The two tend to .blue[produce similar results but with slight differences in rank order]:
+
+.font80[
+.pull-left[
+
+.font120.bold[Impurity]
+
+&lt;img src="06-random-forest_files/figure-html/vi-impurity-1.png" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+.font120.bold[Permutation] 
+
+&lt;img src="06-random-forest_files/figure-html/vi-permutation-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+class: clear, center, middle
+
+background-image: url(images/everyone-can-random-forest.jpg)
+background-size: cover
+
+.pull-left[
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font200.white[Implementation]
+]
+???
+
+Image credit: [unsplash](https://unsplash.com/photos/mDinBvq1Sfg)
+
+---
+# Prereqs
+
+.font130[Random Forest <span>&lt;i class="fas  fa-toolbox faa-FALSE animated "&gt;&lt;/i&gt;</span>]
+
+* __h2o__: `\(n &gt;&gt; p\)`
+* __ranger__: `\(p &gt;&gt; n\)` 
+* __caret__: implements both methods
+
+.code60[
+
+
+```r
+# general EDA
+library(dplyr)
+library(ggplot2)
+
+# machine learning
+*library(ranger)
+*library(h2o)
+*library(caret)
+library(rsample)  # data splitting
+library(vip)      # visualize feature importance 
+library(pdp)      # visualize feature effects
+```
+
+]
+
+--
+
+.font130[Data]
+
+.code60[
+
+
+```r
+# Create training (70%) and test (30%) sets for the AmesHousing::make_ames() data.
+# Use set.seed for reproducibility
+
+set.seed(8451)
+ames_split &lt;- initial_split(AmesHousing::make_ames(), prop = .7, strata = "Sale_Price")
+ames_train &lt;- training(ames_split)
+ames_test  &lt;- testing(ames_split)
+```
+
+]
+
+---
+# What not to use!!!
+
+.pull-left[
+
+.center[<span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045875/928/snail.gif?1471045875" style="height:3em; width:auto; "/&gt;</span>]
+
+
+```r
+# Using the randomForest package
+set.seed(123)
+system.time(
+  slow &lt;- randomForest::randomForest(
+    Sale_Price ~ ., 
+    data = ames_train, 
+    ntree = 1000,
+    mtry = 26,
+    importance = FALSE
+  )
+)
+##    user  system elapsed 
+##  68.887   0.183  69.121
+```
+
+]
+
+.pull-right[
+
+.center[<span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://media1.tenor.com/images/74e2555010f96dc133393de10ca93455/tenor.gif?itemid=11585360" style="height:3em; width:auto; "/&gt;</span>]
+
+
+```r
+# Using the ranger package
+set.seed(123)
+system.time(
+  fast &lt;- ranger(
+    Sale_Price ~ ., 
+    data = ames_train, 
+    num.trees = 1000,
+    mtry = 26
+  )
+)
+##    user  system elapsed 
+##  14.109   0.311   2.177
+```
+
+]
+
+---
+
+# Initial Implementation - training
+
+.pull-left[
+.font80[
+
+* `formula`: formula specification
+
+* `data`: training data
+
+* `num.trees`: number of trees in the forest
+
+* `mtry`: randomly selected predictor variables at each split. Default is `\(\texttt{floor}(\sqrt{\texttt{number of features}})\)` ; however, for regression problems the preferred `mtry` to start with is `\(\texttt{floor}(\frac{\texttt{number of features}}{3}) = \texttt{floor}(\frac{80}{3}) = 26\)`
+
+* `respect.unordered.factors`: specifies how to treat unordered factor variables. We recommend setting this to "order" ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;See ESL, section 9.2.4 for details</span>](https://web.stanford.edu/~hastie/ElemStatLearn/)).
+
+* `seed`: because this is a random algorithm, you will set the seed to get reproducible results
+
+]
+]
+
+.pull-right[
+
+
+```r
+# number of features
+features &lt;- setdiff(names(ames_train), "Sale_Price")
+
+# perform basic random forest model
+fit_default &lt;- ranger(
+  formula    = Sale_Price ~ ., 
+  data       = ames_train, 
+  num.trees  = length(features) * 10,
+  mtry       = floor(length(features) / 3),
+  respect.unordered.factors = 'order',
+  verbose    = FALSE,
+  seed       = 123
+  )
+```
+]
+
+---
+
+# Initial Implementation - results
+
+.code70[
+
+```r
+# look at results
+fit_default
+## Ranger result
+## 
+## Call:
+##  ranger(formula = Sale_Price ~ ., data = ames_train, num.trees = length(features) *      10, mtry = floor(length(features)/3), respect.unordered.factors = "order",      verbose = FALSE, seed = 123) 
+## 
+## Type:                             Regression 
+## Number of trees:                  800 
+## Sample size:                      2054 
+## Number of independent variables:  80 
+## Mtry:                             26 
+## Target node size:                 5 
+## Variable importance mode:         none 
+## Splitrule:                        variance 
+## OOB prediction error (MSE):       620208087 
+## R squared (OOB):                  0.8957654
+
+# compute RMSE (RMSE = square root of MSE)
+sqrt(fit_default$prediction.error)
+## [1] 24903.98
+```
+]
+
+.center[.content-box-grey[.bold[Default results are based on OOB errors]]]
+
+---
+
+# Characteristics to Consider
+
+What we do next should be driven by attributes of our data:
+
+--
+.scrollable90[
+.pull-left[
+
+- Half our variables are numeric
+- Half are categorical variables with moderate number of levels
+- Likely will favor .blue[variance split rule]
+- May benefit from .blue[sampling w/o replacement]
+
+
+```r
+ames_train %&gt;%
+  summarise_if(is.factor, n_distinct) %&gt;% 
+  gather() %&gt;% 
+  arrange(desc(value))
+## # A tibble: 46 x 2
+##    key          value
+##    &lt;chr&gt;        &lt;int&gt;
+##  1 Neighborhood    27
+##  2 Exterior_1st    16
+##  3 Exterior_2nd    16
+##  4 MS_SubClass     15
+##  5 Overall_Qual    10
+##  6 Sale_Type       10
+##  7 Condition_1      9
+##  8 Overall_Cond     9
+##  9 House_Style      8
+## 10 Functional       8
+## # … with 36 more rows
+```
+
+]
+
+.pull-right[
+
+- We have highly correlated data (both btwn features and with target)
+- May favor .blue[lower mtry] and
+- .blue[lower node size] to help decorrelate the trees&lt;br&gt;&lt;br&gt;
+
+
+```r
+cor_matrix &lt;- ames_train %&gt;%
+  mutate_if(is.factor, as.numeric) %&gt;%
+  cor()
+
+# feature correlation
+data_frame(
+  row  = rownames(cor_matrix)[row(cor_matrix)[upper.tri(cor_matrix)]],
+  col  = colnames(cor_matrix)[col(cor_matrix)[upper.tri(cor_matrix)]],
+  corr = cor_matrix[upper.tri(cor_matrix)]
+  ) %&gt;%
+  arrange(desc(abs(corr)))
+## # A tibble: 3,240 x 3
+##    row            col             corr
+##    &lt;chr&gt;          &lt;chr&gt;          &lt;dbl&gt;
+##  1 BsmtFin_Type_1 BsmtFin_SF_1   1    
+##  2 Garage_Cars    Garage_Area    0.888
+##  3 Exterior_1st   Exterior_2nd   0.856
+##  4 Gr_Liv_Area    TotRms_AbvGrd  0.802
+##  5 Overall_Qual   Sale_Price     0.800
+##  6 Total_Bsmt_SF  First_Flr_SF   0.789
+##  7 MS_SubClass    Bldg_Type      0.719
+##  8 House_Style    Second_Flr_SF  0.713
+##  9 BsmtFin_Type_2 BsmtFin_SF_2  -0.702
+## 10 Gr_Liv_Area    Sale_Price     0.694
+## # … with 3,230 more rows
+
+# target correlation
+data_frame(
+    row  = rownames(cor_matrix)[row(cor_matrix)[upper.tri(cor_matrix)]],
+    col  = colnames(cor_matrix)[col(cor_matrix)[upper.tri(cor_matrix)]],
+    corr = cor_matrix[upper.tri(cor_matrix)]
+) %&gt;% filter(col == "Sale_Price") %&gt;%
+    arrange(desc(abs(corr)))
+## # A tibble: 78 x 3
+##    row           col          corr
+##    &lt;chr&gt;         &lt;chr&gt;       &lt;dbl&gt;
+##  1 Overall_Qual  Sale_Price  0.800
+##  2 Gr_Liv_Area   Sale_Price  0.694
+##  3 Exter_Qual    Sale_Price -0.662
+##  4 Garage_Cars   Sale_Price  0.655
+##  5 Garage_Area   Sale_Price  0.652
+##  6 Total_Bsmt_SF Sale_Price  0.630
+##  7 Kitchen_Qual  Sale_Price -0.625
+##  8 First_Flr_SF  Sale_Price  0.617
+##  9 Bsmt_Qual     Sale_Price -0.575
+## 10 Year_Built    Sale_Price  0.571
+## # … with 68 more rows
+```
+
+]
+]
+
+---
+
+# Tuning
+
+But before we tune, do we have enough <span class=" faa-pulse animated-hover " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/large-tree-icon.png" style="height:1em; width:auto; "/&gt;</span>s?
+
+.scrollable90[
+.pull-left[
+
+- Some pkgs provide OOB error for each tree
+- __ranger__ only provides overall OOB
+
+.code80[
+
+
+```r
+# ranger function
+oob_error &lt;- function(trees) {
+  fit &lt;- ranger(
+  formula    = Sale_Price ~ ., 
+  data       = ames_train, 
+* num.trees  = trees,
+  mtry       = floor(n_features / 3),
+  respect.unordered.factors = 'order',
+  verbose    = FALSE,
+  seed       = 123
+  )
+  
+  sqrt(fit$prediction.error)
+}
+
+# tuning grid
+trees &lt;- seq(10, 1000, by = 20)
+
+(rmse &lt;- trees %&gt;% purrr::map_dbl(oob_error))
+##  [1] 30387.22 27341.88 26405.25 25920.00 25907.03 25696.51 25672.45
+##  [8] 25573.29 25365.42 25421.90 25431.23 25285.11 25218.24 25233.98
+## [15] 25159.62 25089.80 25085.95 25044.59 25085.23 25036.41 25020.16
+## [22] 25008.11 25036.25 25006.58 24995.81 24972.61 24936.26 24934.97
+## [29] 24903.18 24918.92 24931.42 24913.37 24920.44 24905.52 24890.55
+## [36] 24898.37 24879.80 24881.94 24882.28 24889.16 24895.66 24884.77
+## [43] 24881.36 24883.92 24913.96 24910.84 24920.61 24910.60 24882.93
+## [50] 24885.86
+```
+
+]
+]
+
+.pull-right[
+
+- using `\(p \times 10 = 800\)` trees is sufficient
+- may increase if we decrease mtry or sample size
+
+
+```r
+ggplot(data.frame(trees, rmse), aes(trees, rmse)) +
+  geom_line(size = 1)
+```
+
+&lt;img src="06-random-forest_files/figure-html/implementation-trees-plot-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+---
+
+# Tuning
+
+.scrollable90[
+.pull-left[
+
+.font120[Tuning grid]
+
+- lower end of mtry range due to correlation
+- lower end of node size range due to correlation
+- sampling w/o replacement due to categorical features &lt;br&gt;&lt;br&gt;
+
+.code80[
+
+
+```r
+hyper_grid &lt;- expand.grid(
+  mtry            = floor(n_features * c(.05, .15, .25, .333, .4)),
+  min.node.size   = c(1, 3, 5),
+  replace         = c(TRUE, FALSE),
+  sample.fraction = c(.5, .63, .8),
+  rmse            = NA
+)
+
+# number of hyperparameter combinations
+nrow(hyper_grid)
+## [1] 90
+
+head(hyper_grid)
+##   mtry min.node.size replace sample.fraction rmse
+## 1    4             1    TRUE             0.5   NA
+## 2   12             1    TRUE             0.5   NA
+## 3   20             1    TRUE             0.5   NA
+## 4   26             1    TRUE             0.5   NA
+## 5   32             1    TRUE             0.5   NA
+## 6    4             3    TRUE             0.5   NA
+```
+
+]
+]
+
+.pull-right[
+
+.font120[Grid search execution]
+
+- This search grid took ~2.5 minutes
+- __caret__ provides grid search [<span>&lt;i class="fas  fa-external-link-alt faa-FALSE animated " style=" color:blue;"&gt;&lt;/i&gt;</span>](https://topepo.github.io/caret/model-training-and-tuning.html)
+- For larger data, use __H2O__'s random grid search with early stopping [<span>&lt;i class="fas  fa-external-link-alt faa-FALSE animated " style=" color:blue;"&gt;&lt;/i&gt;</span>](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/grid-search.html)
+
+.code80[
+
+
+```r
+for(i in seq_len(nrow(hyper_grid))) {
+  
+  # fit model for ith hyperparameter combination
+  fit &lt;- ranger(
+    formula         = Sale_Price ~ ., 
+    data            = ames_train, 
+    num.trees       = 1000,
+*   mtry            = hyper_grid$mtry[i],
+*   min.node.size   = hyper_grid$min.node.size[i],
+*   replace         = hyper_grid$replace[i],
+*   sample.fraction = hyper_grid$sample.fraction[i],
+    verbose         = FALSE,
+    seed            = 123,
+    respect.unordered.factors = 'order',
+  )
+  
+  # export OOB error 
+  hyper_grid$rmse[i] &lt;- sqrt(fit$prediction.error)
+  
+}
+```
+
+]
+]
+]
+
+---
+
+# Tuning results
+
+.pull-left[
+
+Our top 10 models:
+
+- have ~1% or higher performance improvement over the default model
+- sample w/o replacement
+- primarily include higher sampling
+- primarily use mtry = 20 or 26
+- node size appears non-influential
+
+I would follow this up with an additional grid search that focuses on:
+
+- mtry values around 15, 18, 21, 24
+- sample fraction around 63%, 70%, 75%, 80%
+
+.center[.blue[_using too high of sampling fraction without replacement runs the risk of overfitting to your training data!_]]
+
+]
+
+.pull-right[
+
+
+```r
+default_rmse &lt;- sqrt(fit_default$prediction.error)
+
+hyper_grid %&gt;%
+  arrange(rmse) %&gt;%
+  mutate(perc_gain = (default_rmse - rmse) / default_rmse * 100) %&gt;%
+  head(10)
+##    mtry min.node.size replace sample.fraction     rmse perc_gain
+## 1    20             1   FALSE            0.80 24474.19 1.7257766
+## 2    20             5   FALSE            0.80 24485.64 1.6798126
+## 3    20             3   FALSE            0.80 24555.24 1.4003421
+## 4    26             3   FALSE            0.80 24612.76 1.1693799
+## 5    20             1   FALSE            0.63 24613.27 1.1673219
+## 6    26             1   FALSE            0.80 24615.42 1.1586911
+## 7    26             5   FALSE            0.80 24617.94 1.1485760
+## 8    20             3   FALSE            0.63 24642.72 1.0490463
+## 9    12             1   FALSE            0.80 24659.98 0.9797534
+## 10   12             3   FALSE            0.80 24702.53 0.8089133
+```
+
+]
+
+---
+# Tuning in caret 🥕
+
+.pull-left[
+Within __caret__, we can tune...
+
+* `mtry`
+
+* `splitrule`
+
+* `min.node.size`
+
+...for `method = "ranger"`
+
+]
+
+.pull-right[
+
+
+```r
+caret::getModelInfo("ranger")$ranger$parameters
+##       parameter     class                         label
+## 1          mtry   numeric #Randomly Selected Predictors
+## 2     splitrule character                Splitting Rule
+## 3 min.node.size   numeric             Minimal Node Size
+```
+
+]
+
+---
+# Feature Importance &lt;a href="https://koalaverse.github.io/vip/index.html"&gt;&lt;img src="images/logo-vip.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+
+.pull-left[
+
+Once you find your optimal model:
+
+- re-run with the respective hyperparameters
+- include `importance` parameter
+- crank up the # of trees to ensure stable vi estimates
+
+
+```r
+fit_final &lt;- ranger(
+  formula         = Sale_Price ~ ., 
+  data            = ames_train, 
+* num.trees       = 2000,
+  mtry            = 20,
+  min.node.size   = 1,
+  sample.fraction = .8,
+  replace         = FALSE,
+* importance      = 'permutation',
+  respect.unordered.factors = 'order',
+  verbose         = FALSE,
+  seed            = 123
+  )
+```
+
+]
+
+.pull-right[
+
+
+```r
+vip(fit_final, num_features = 15)
+```
+
+&lt;img src="06-random-forest_files/figure-html/vip-top15-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+
+Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
+
+.pull-left[
+
+.center.bold[PDP: Overall Home Quality]
+
+
+```r
+fit_final %&gt;%
+  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %&gt;%
+  autoplot()
+```
+
+&lt;img src="06-random-forest_files/figure-html/pdp-overall-qual-1.png" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+.center.bold[ICE: Overall Home Quality]
+
+
+```r
+fit_final %&gt;%
+  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %&gt;%
+  autoplot(alpha = 0.05, center = TRUE)
+```
+
+&lt;img src="06-random-forest_files/figure-html/ice-overall-qual-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+
+Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
+
+.pull-left[
+
+.center.bold[PDP: Above Ground SqFt]
+
+
+```r
+fit_final %&gt;%
+  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %&gt;%
+  autoplot()
+```
+
+&lt;img src="06-random-forest_files/figure-html/pdp-ground-liv-1.png" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+.pull-right[
+
+.center.bold[ICE: Above Ground SqFt]
+
+
+```r
+fit_final %&gt;%
+  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %&gt;%
+  autoplot(alpha = 0.05, center = TRUE)
+```
+
+&lt;img src="06-random-forest_files/figure-html/ice-ground-liv-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+
+Interaction between two influential variables:
+
+.pull-left[
+
+
+```r
+fit_final %&gt;%
+  partial(
+    pred.var = c("Gr_Liv_Area", "Year_Built"),
+    train = as.data.frame(ames_train)
+    ) %&gt;%
+  plotPartial(
+    zlab = "Sale_Price",
+    levelplot = FALSE, 
+    drape = TRUE, 
+    colorkey = FALSE,
+    screen = list(z = 50, x = -60)
+  )
+```
+
+
+]
+
+.pull-right[
+
+
+
+]
+
+&lt;br&gt;&lt;br&gt;
+.center.bold[We'll learn more about interpreting machine learning models later today.]
+
+---
+
+# Random Forest Summary 
+
+.pull-left[
+
+### Strengths <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>
+
+- .green[Competitive performance.]
+- .green[Remarkably good "out-of-the box"] (very little tuning required).
+- .green[Built-in validation set] (don't need to sacrifice data for extra validation).
+- .green[Typically does not overfit.]
+- .green[Robust to outliers.]
+- .green[Handles missing data] (imputation not required).
+- .green[Provide automatic feature selection.]
+- .green[Minimal preprocessing required.]
+]
+
+--
+
+.pull-right[
+
+### Weaknesses <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1.25em; width:auto; "/&gt;</span>
+
+- .red[Although accurate, often cannot compete with the accuracy of advanced boosting algorithms.] 
+- .red[Can become slow on large data sets.]
+- .red[Less interpretable] (although this is easily addressed with various tools such as variable importance, partial dependence plots, Shapley values, etc.).
+
+]
+
+---
+
+# Random Forest Summary
+
+.pull-left[
+
+&lt;img src="images/leo-breiman.jpg" width="70%" height="70%" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+.pull-right[
+
+&lt;br&gt;&lt;br&gt;
+
+.font120[
+_"Take the output of random forests not as absolute truth, but as smart computer generated guesses that may be helpful in leading to a deeper understanding of the problem."_
+
+--- Leo Breiman
+
+]
+]
+
+---
+
+# Learning More
+
+.pull-left[
+
+&lt;img src="images/isl.jpg" width="55%" height="55%" style="display: block; margin: auto;" /&gt;
+
+.center.font150[[Book website](http://www-bcf.usc.edu/~gareth/ISL/)]
+]
+
+
+.pull-right[
+
+&lt;img src="images/esl.jpg" width="55%" height="55%" style="display: block; margin: auto;" /&gt;
+
+.center.font150[[Book website](https://web.stanford.edu/~hastie/ElemStatLearn/)]
+]
+
+---
+class: clear, center, middle
+
+background-image: url(images/raising-hand.gif)
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font300.bold[<span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">Questions?</span>]
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
