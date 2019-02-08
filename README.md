@@ -27,17 +27,18 @@ the material covered in this training:
 | [Regression & cousins](https://uc-r.github.io/Advanced-R/05-regression.html)                         |  2:00 - 4:00  |
 | Q\&A                                                                                                 |  4:00 - 4:30  |
 
-**Day 2**
+**Day
+2**
 
-| Topic                                     |     Time      |
-| :---------------------------------------- | :-----------: |
-| Breakfast / Social time                   |  8:00 - 9:00  |
-| Decision trees, bagging, & random forests | 9:00 - 11:00  |
-| Gradient boosting machines                | 11:00 - 12:00 |
-| Lunch                                     | 12:00 - 1:00  |
-| Stacked models & autoML                   |  1:00 - 2:30  |
-| Interpretable machine learning            |  2:45 - 4:00  |
-| Q\&A                                      |  4:00 - 4:30  |
+| Topic                                                                                                |     Time      |
+| :--------------------------------------------------------------------------------------------------- | :-----------: |
+| Breakfast / Social time                                                                              |  8:00 - 9:00  |
+| [Decision trees, bagging, & random forests](https://uc-r.github.io/Advanced-R/06-random-forest.html) | 9:00 - 11:00  |
+| Gradient boosting machines                                                                           | 11:00 - 12:00 |
+| Lunch                                                                                                | 12:00 - 1:00  |
+| Stacked models & autoML                                                                              |  1:00 - 2:30  |
+| Interpretable machine learning                                                                       |  2:45 - 4:00  |
+| Q\&A                                                                                                 |  4:00 - 4:30  |
 
 ***Schedule is still being refined and is subject to change; however,
 the topics should remain the same.***
