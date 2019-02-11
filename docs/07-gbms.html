@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gradient Boosting Machines</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-03-01" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: clear, center, middle
+
+background-image: url(images/gbm-icon.jpg)
+background-position: center
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font300.white[Gradient Boosting Machines]
+
+---
+# Introduction
+
+.pull-left[
+
+.center.bold.font120[Thoughts]
+
+- Extremely popular
+
+- One of the leading methods in prediction competitions
+
+- Boosted trees <span>&lt;i class="fas  fa-arrow-right faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> similar to, but quite different than, RFs <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/headpound_bunny.gif" style="height:1.5em; width:auto; "/&gt;</span>
+
+]
+
+--
+
+.pull-right[
+
+.center.bold.font120[Overview]
+
+- Technical differences between RFs and GBMs
+
+- Basic implementation
+
+- Tuning parameters
+
+- XGBoost
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Technicalities]
+
+---
+# Decision Trees
+
+.pull-left[
+
+* Many benefits <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>
+   - .green[minimal preprocessing]
+   - .green[can handle any data type]
+   - .green[automatically captures interactions]
+   - .green[scales well to large data]
+   - .green[(can be) easy to interpret]
+   
+* A few significant weaknesses <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1em; width:auto; "/&gt;</span>   
+   - .red[large trees hard to interpret]
+   - .red[trees are step functions] (i.e., binary splits)
+   - .red[single trees typically have poor predictive accuracy]
+   - .red[single trees have high variance] (easy to overfit to training data)
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/dt-deep-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Bagging
+
+.pull-left[
+
+* Benefits <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>
+   - .green[takes advantage of a deep, single tree's high variance]
+   - .green[wisdom of the crowd reduces prediction error]
+   - .green[fast (typically only requires 50-100 trees)]
+
+* Weaknesses <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1em; width:auto; "/&gt;</span>  
+   - .red[tree correlation]
+   - .red[minimizes tree diversity and, therefore,]
+   - .red[limited prediction error improvement ]
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/bagging-gif-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Random Forests
+
+.pull-left[
+
+* Many benefits <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045870/910/rock.gif?1471045870" style="height:1em; width:auto; "/&gt;</span>
+   - .green[all the benefits of individual trees and bagging plus...]
+   - .green[split-variable randomization reduces tree correlation]
+   - .green[typically results in reduced prediction error compared to bagging]
+   - .green[good out-of-box performance]
+   
+* Weaknesses <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1em; width:auto; "/&gt;</span> 
+   - .red[Although accurate, often cannot compete with the accuracy of advanced boosting algorithms.]
+   - .red[Can become slow on large data sets.]
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/bagging-vs-random-forest-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
+The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, base-learner model is trained with respect to the error of the whole ensemble learnt so far.
+
+&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+--
+
+.pull-right[
+
+&lt;img src="https://media.giphy.com/media/3o84UeTqecxpcQJGOA/giphy.gif" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
+The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new .blue.bold[weak], base-learner model is trained with respect to the error of the whole ensemble learnt so far.
+
+&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+A weak model:
+
+* one whose error rate is only slightly better than random guessing
+
+* each step slightly improves the remaining errors
+
+* commonly, trees with only 1-6 splits are used
+
+* Benefits of weak models
+   - speed
+   - accuracy improvement
+   - can avoid overfitting
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
+The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, .blue.bold[base-learner model] is trained with respect to the error of the whole ensemble learnt so far.
+
+&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+Base-learning models:
+
+* boosting is a framework that iteratively improves any weak learning model
+
+* many gradient boosting applications allow you to “plug in” various classes of weak learners at your disposal
+
+* in practice however, boosted algorithms almost always use decision trees as the base-learner
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
+The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, base-learner model is .blue.bold[trained with respect to the error] of the whole ensemble learnt so far.
+
+&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+Sequential training with respect to errors:
+
+* boosted trees are grown sequentially; each tree is grown using information from previously grown trees. 
+
+   1. Fit a decision tree to the data: `\(F_1(x) = y\)`,
+   2. We then fit the next decision tree to the residuals of the previous: `\(h_1(x) = y - F_1(x)\)`,
+   3. Add this new tree to our algorithm: `\(F_2(x) = F_1(x) + h_1(x)\)`,
+   4. Fit the next decision tree to the residuals of `\(F_2\)`: `\(h_2(x) = y - F_2(x)\)`,
+   5. Add this new tree to our algorithm: `\(F_3(x) = F_2(x) + h_1(x)\)`,
+   6. Continue this process until some mechanism (i.e. cross validation) tells us to stop.
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
+The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, base-learner model is trained with respect to the error of the whole ensemble learnt so far.
+
+&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/gbm-illustration-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+class: center, middle, inverse
+
+.font300.white[Basic implementation]
+
+---
+# Basic implementation
+
+
+---
+class: center, middle, inverse
+
+.font300.white[Tuning]
+
+
+---
+class: center, middle, inverse
+
+.font300.white[Extreme Gradient Boosting]
+
+---
+# XGBoost
+
+
+---
+class: center, middle, inverse
+
+.font300.white[Wrapping Up]
+
+---
+
+# Learning More
+
+.pull-left[
+
+&lt;img src="images/isl.jpg" width="55%" height="55%" style="display: block; margin: auto;" /&gt;
+
+.center.font150[[Book website](http://www-bcf.usc.edu/~gareth/ISL/)]
+]
+
+
+.pull-right[
+
+&lt;img src="images/esl.jpg" width="55%" height="55%" style="display: block; margin: auto;" /&gt;
+
+.center.font150[[Book website](https://web.stanford.edu/~hastie/ElemStatLearn/)]
+]
+
+---
+class: clear, center, middle
+
+background-image: url(images/raising-hand.gif)
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font300.bold[<span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">Questions?</span>]
+
+---
+# Back home
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+[.center[<span>&lt;i class="fas  fa-home fa-10x faa-FALSE animated "&gt;&lt;/i&gt;</span>]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
