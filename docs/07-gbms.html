@@ -235,20 +235,64 @@ Sequential training with respect to errors:
 ---
 # How boosting works
 
+We call this sequential training .blue.bold[additive model ensembling] where each iteration gradually nudges our predicted values closer to the target.
+
 .pull-left[
 
-The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, base-learner model is trained with respect to the error of the whole ensemble learnt so far.
+$$
+`\begin{aligned}
+ \hat y &amp; = f_0(x) + \triangle_1(x) + \triangle_2(x) + \cdots + \triangle_M(x)  \\
+        &amp; = f_0(x) + \sum^M_{m=1} \triangle_m(x) \\
+        &amp; = F_m(x)
+\end{aligned}`
+$$
 
-&lt;img src="images/boosted-trees-process.png" width="663" style="display: block; margin: auto;" /&gt;
+Also written as...
+
+$$
+`\begin{aligned}
+ F_0(x) &amp; = f_0(x) \\
+ F_m(x) &amp; = F_{m-1}(x) + \triangle_m(x)
+\end{aligned}`
+$$
 
 ]
 
 .pull-right[
 
+&lt;img src="images/golf-dir-vector.png" width="2888" style="display: block; margin: auto;" /&gt;
+
+.font60.right[Image: [Terence Parr &amp; Jeremy Howard](https://explained.ai/gradient-boosting/L2-loss.html)]
+
+]
+
+---
+# How boosting works
+
+.pull-left[
+
 &lt;img src="07-gbms_files/figure-html/gbm-illustration-1.gif" style="display: block; margin: auto;" /&gt;
 
 ]
 
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/gbm-residual-illustration-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Boosting &gt; Random Forest &gt; Bagging &gt; Single Tree
+
+.pull-left[
+
+.center[Typically, this allows us to eek out additional predictive performance!]
+
+]
+
+.pull-right[
+&lt;img src="07-gbms_files/figure-html/bagging-vs-random-forest-vs-boosting-1.gif" style="display: block; margin: auto;" /&gt;
+]
 
 ---
 class: center, middle, inverse

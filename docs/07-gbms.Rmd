@@ -362,17 +362,43 @@ Sequential training with respect to errors:
 ---
 # How boosting works
 
+We call this sequential training .blue.bold[additive model ensembling] where each iteration gradually nudges our predicted values closer to the target.
+
 .pull-left[
 
-The main idea of boosting is to add new models to the ensemble sequentially. At each particular iteration, a new weak, base-learner model is trained with respect to the error of the whole ensemble learnt so far.
+$$
+\begin{aligned}
+ \hat y & = f_0(x) + \triangle_1(x) + \triangle_2(x) + \cdots + \triangle_M(x)  \\
+        & = f_0(x) + \sum^M_{m=1} \triangle_m(x) \\
+        & = F_m(x)
+\end{aligned}
+$$
 
-```{r boosting-process5, echo=FALSE}
-knitr::include_graphics("images/boosted-trees-process.png")
-```
+Also written as...
+
+$$
+\begin{aligned}
+ F_0(x) & = f_0(x) \\
+ F_m(x) & = F_{m-1}(x) + \triangle_m(x)
+\end{aligned}
+$$
 
 ]
 
 .pull-right[
+
+```{r golfer, echo=FALSE}
+knitr::include_graphics("images/golf-dir-vector.png")
+```
+
+.font60.right[Image: [Terence Parr & Jeremy Howard](https://explained.ai/gradient-boosting/L2-loss.html)]
+
+]
+
+---
+# How boosting works
+
+.pull-left[
 
 ```{r gbm-illustration, echo=FALSE}
 set.seed(1112)
@@ -416,6 +442,87 @@ animate(p, renderer = gifski_renderer(), device = "png")
 
 ]
 
+.pull-right[
+
+```{r gbm-residual-illustration, echo=FALSE}
+resids <- rpartBoost(x, y, data = df, num_trees = 750, learn_rate = 0.05, tree_depth = 1) %>%
+  mutate(residuals = abs(y - prediction))
+
+avg_resids <- resids %>%
+  group_by(tree) %>%
+  summarize(avg = mean(residuals))
+
+r <- ggplot(resids, aes(x, residuals)) +
+  ylab("absolute(residuals)") +
+  geom_segment(aes(x = x, xend = x, y = 0, yend = residuals), colour = "red", size = .5, alpha = .5) +
+  geom_point(colour = "red", size = 1) +
+  geom_text(data = avg_resids, aes(x = 4, y = 2.5, label = paste("Mean abs(residual):", round(avg, 4))), hjust = 0) +
+  transition_manual(tree) +
+  labs(title = 'Number of trees (depth = 1): {frame}')
+
+animate(r, renderer = gifski_renderer(), device = "png")
+```
+
+]
+
+---
+# Boosting > Random Forest > Bagging > Single Tree
+
+.pull-left[
+
+.center[Typically, this allows us to eek out additional predictive performance!]
+
+]
+
+.pull-right[
+```{r bagging-vs-random-forest-vs-boosting, echo=FALSE}
+data(spam, package = "kernlab")
+split <- rsample::initial_split(spam)
+train <- rsample::training(split)
+test <- rsample::testing(split)
+
+# fit GBM
+train$type <- ifelse(train$type == "spam", 1, 0)
+
+# prep error data frame
+gbm_df <- data.frame(
+  model = "GBM",
+  trees = seq_len(1000),
+  error = 0
+)
+
+set.seed(8451)  # for reproducibility
+spam_gbm <- gbm::gbm(
+  type ~ .,
+  data = train,
+  distribution = "bernoulli",  # "bernoulli", "coxph", etc.
+  n.trees = 1000,
+  interaction.depth = 2,
+  n.minobsinnode = 10,
+  shrinkage = 0.2,
+  bag.fraction = 1,
+  train.fraction = 1
+  )
+
+for(i in seq_len(1000)) {
+  pred <- predict(spam_gbm, test, n.trees = i)
+  pred <- ifelse(pred >= .5, "spam", "nonspam")
+  gbm_df[i, "error"] <- mean(pred != as.character(test$type))
+}
+
+p <- rbind(bag_df, rf_df) %>%
+  rbind(gbm_df) %>%
+  ggplot(aes(trees, error, color = model)) +
+  geom_line() +
+  scale_y_continuous(limits = c(.035, .1)) +
+  theme(
+    legend.title = element_blank(),
+    legend.position = c(0.85, 0.9)
+    ) +
+  transition_reveal(id = model, along = trees)
+animate(p, renderer = gifski_renderer(), device = "png")
+```
+]
 
 ---
 class: center, middle, inverse
