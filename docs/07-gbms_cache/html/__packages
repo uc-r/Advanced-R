@@ -11,3 +11,7 @@ forcats
 rpart
 bindrcpp
 gganimate
+survival
+lattice
+gbm
+xgboost

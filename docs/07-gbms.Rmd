@@ -59,6 +59,8 @@ background-size: cover
 
 - Boosted trees `r anicon::faa("arrow-right", animate = FALSE, color = "red")` similar to, but quite different than, RFs `r anicon::cia("images/headpound_bunny.gif", animate = FALSE, size = 1.5)`
 
+- Math isn't that complicated until you want to generalize to all loss functions
+
 ]
 
 --
@@ -67,13 +69,44 @@ background-size: cover
 
 .center.bold.font120[Overview]
 
-- Technical differences between RFs and GBMs
+- Fundamental differences between RFs and GBMs
 
-- Basic implementation
+- Basic GBM
 
-- Tuning parameters
+- Stochastic GBM
 
 - XGBoost
+
+]
+
+---
+# Prereqs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
+
+.pull-left[
+
+.center.bold.font120[Packages]
+
+```{r prereqs-pks}
+library(gbm)
+library(xgboost)
+```
+
+
+]
+
+.pull-right[
+
+.center.bold.font120[Data]
+
+```{r prereqs-data}
+# ames data
+ames <- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split <- rsample::initial_split(ames, strata = "Sale_Price")
+ames_train <- rsample::training(split)
+```
 
 ]
 
@@ -470,7 +503,9 @@ animate(r, renderer = gifski_renderer(), device = "png")
 
 .pull-left[
 
-.center[Typically, this allows us to eek out additional predictive performance!]
+<br><br>
+
+.center.font120.blue[Typically, this allows us to eek out additional predictive performance!]
 
 ]
 
@@ -497,8 +532,8 @@ spam_gbm <- gbm::gbm(
   data = train,
   distribution = "bernoulli",  # "bernoulli", "coxph", etc.
   n.trees = 1000,
-  interaction.depth = 2,
-  n.minobsinnode = 10,
+  interaction.depth = 6,
+  n.minobsinnode = 5,
   shrinkage = 0.2,
   bag.fraction = 1,
   train.fraction = 1
@@ -514,7 +549,7 @@ p <- rbind(bag_df, rf_df) %>%
   rbind(gbm_df) %>%
   ggplot(aes(trees, error, color = model)) +
   geom_line() +
-  scale_y_continuous(limits = c(.035, .1)) +
+  scale_y_continuous(limits = c(.025, .1)) +
   theme(
     legend.title = element_blank(),
     legend.position = c(0.85, 0.9)
@@ -527,16 +562,597 @@ animate(p, renderer = gifski_renderer(), device = "png")
 ---
 class: center, middle, inverse
 
-.font300.white[Basic implementation]
+.font300.white[Basic GBM]
 
 ---
-# Basic implementation
+# Basic GBM
 
+.pull-left[
+
+.bold.font110[[gbm](https://github.com/gbm-developers/gbm)]
+- The original R implementation of GMBs (by Greg Ridgeway)
+- Slower than modern implementations (but still pretty fast)
+- Provides OOB error estimate
+- Supports the weighted tree traversal method for fast construction of PDPs
+- <u>Great looking support team</u>
+   
+.bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
+- Shiny new version of gbm that is not backwards compatible
+- Faster and supports parallel tree building
+- Not currently listed on CRAN
+
+]
+
+.pull-right[
+
+```{r basic-gbm-options, echo=FALSE}
+knitr::include_graphics("images/gbm-developers.png")
+```
+
+]
+
+---
+# Basic GBM .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
+
+.pull-left[
+
+.bold.font110[[gbm](https://github.com/gbm-developers/gbm)]
+- The original R implementation of GMBs (by Greg Ridgeway)
+- Slower than modern implementations (but still pretty fast)
+- Provides OOB error estimate
+- Supports the weighted tree traversal method for fast construction of PDPs
+- Great looking support team
+   
+.opacity20[   
+.bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
+- Shiny new version of gbm that is not backwards compatible
+- Faster and supports parallel tree building
+- Not currently listed on CRAN
+]
+]
+
+.pull-right[
+.center.bold.font90[Let's run your first GBM model]
+
+```{r basic-gbm}
+set.seed(123)
+ames_gbm <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. 
+  n.trees = 5000, 
+  shrinkage = 0.1, 
+  interaction.depth = 1, 
+  n.minobsinnode = 10, 
+  cv.folds = 5 
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+```
+
+.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~30 secs `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+]
+
+---
+# What's going on?
+
+
+.pull-left.font90[
+
+<br>
+
+* .bold[`distribution`]: specify distribution of response variable; `gbm` will make intelligent guess
+
+* .bold[`n.trees`]: number of sequential trees to fit
+
+* .bold[`shrinkage`]: how quickly do we improve on each iteration (aka _learning rate_)
+
+* .bold[`interaction.depth`]: how weak of a learner do we want
+
+* .bold[`n.minobsinnode`]: minimum number of observations in the trees terminal nodes
+
+* .bold[`cv.folds`]: _k_-fold cross validation
+
+]
+
+.pull-right[
+
+.opacity20.center.bold.font90[Let's run your first GBM model]
+
+```{r basic-gbm-whats-going-on, eval=FALSE}
+set.seed(123)
+ames_gbm <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
+  n.trees = 5000, #<<
+  shrinkage = 0.1, #<<
+  interaction.depth = 1, #<<
+  n.minobsinnode = 10, #<<
+  cv.folds = 5 #<<
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+## [1] 27028.1
+```
+
+.opacity20.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~30 secs `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+]
+
+---
+# What's going on?
+
+
+.pull-left.font90[
+
+.bold.center[Tunable Hyperparameters]
+
+* .opacity20[`distribution`: specify distribution of response variable; `gbm` will make intelligent guess]
+
+* .bold[`n.trees`]: number of sequential trees to fit
+
+* .bold[`shrinkage`]: how quickly do we improve on each iteration (aka _learning rate_)
+
+* .bold[`interaction.depth`]: how weak of a learner do we want
+
+* .bold[`n.minobsinnode`]: minimum number of observations in the trees terminal nodes
+
+* .opacity20[`cv.folds`: _k_-fold cross validation]
+
+]
+
+.pull-right[
+
+.opacity20.center.bold.font90[Let's run your first GBM model]
+
+```{r basic-gbm-whats-going-on2, eval=FALSE}
+set.seed(123)
+ames_gbm <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
+  n.trees = 5000, #<<
+  interaction.depth = 1, #<<
+  shrinkage = 0.1, #<<
+  cv.folds = 5 #<<
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+## [1] 27028.1
+```
+
+.opacity20.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~30 secs `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+]
+
+---
+# Tuning `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-`r anicon::faa("box-open", animate = "pulse", anitype="hover")`" performance!
+
+--
+
+We can divide hyperparameters into 2 primary categories:
+
+--
+
+.pull-left[
+
+.center.bold[Boosting Parameters]
+
+- Number of trees
+
+- Learning rate
+
+- More to come!
+
+]
+
+.pull-right[
+
+.center.bold[Tree-specific Parameters]
+
+- Tree depth
+
+- Minimum obs in terminal node
+
+- And others
+
+]
+
+---
+# Boosting hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+.pull-left[
+
+.blue.bold[Number of trees]
+
+- The averaging in bagging and RF makes it very difficult to overfit with too many trees
+
+- GBMs will chase residuals as long as you allow them 
+
+- Consequently:
+   - We must provide enough trees to minimize error
+   - But not too many where we begin to overfit
+
+
+]
+
+.pull-right[
+
+```{r num-trees, echo=FALSE}
+set.seed(1112)
+df <- tibble::tibble(
+  x = seq(from = 0, to = 2 * pi, length = 1000),
+  y = sin(x) + rnorm(length(x), sd = 0.5),
+  truth = sin(x)
+)
+
+p <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 4) %>%
+  ggplot(aes(x, prediction)) +
+  ylab("y") +
+  geom_point(data = df, aes(x, y), alpha = .1) +
+  geom_line(data = df, aes(x, truth), color = "blue") +
+  geom_line(colour = "red", size = 1) +
+  transition_manual(tree) +
+  labs(title = 'Number of trees (depth = 1): {frame}')
+
+animate(p, renderer = gifski_renderer(), device = "png")
+```
+
+]
+
+---
+# Boosting hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`  .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
+
+.pull-left[
+
+.blue.bold[Number of trees]
+
+- The averaging in bagging and RF makes it very difficult to overfit with too many trees
+
+- GBMs will chase residuals as long as you allow them 
+
+- Consequently:
+   - We must provide enough trees to minimize error
+   - But not too many where we begin to overfit
+   - .red[plus, number of trees is dependent on other hyperparameters]
+
+.center.bold.blue[Use CV or OOB] 
+
+]
+
+.pull-right[
+
+```{r, fig.height=5}
+gbm.perf(ames_gbm, method = "cv") # or "OOB"
+```
+
+<br>   
+.center.bold.blue[Use CV or OOB]   
+
+]
+
+---
+# Boosting hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+.font120[
+- Determines the impact of each tree on the final outcome
+]
+
+]
+
+.pull-right[
+
+```{r learning-rate, echo=FALSE, fig.height=5.5}
+# create data to plot
+x <- seq(-5, 5, by = .05)
+y <- x^2 + 3
+df <- data.frame(x, y)
+
+step <- 5
+step_size <- .2
+for(i in seq_len(18)) {
+  next_step <- max(step) + round(diff(range(max(step), which.min(df$y))) * step_size, 0)
+  step <- c(step, next_step)
+  next
+}
+
+steps <- df[step, ] %>%
+  mutate(x2 = lag(x), y2 = lag(y)) %>%
+  dplyr::slice(1:18)
+
+# plot
+ggplot(df, aes(x, y)) +
+  geom_line(size = 1.5, alpha = .5) +
+  theme_classic() +
+  scale_y_continuous("Loss function", limits = c(0, 30)) +
+  xlab(expression(theta)) +
+  geom_segment(data = df[c(5, which.min(df$y)), ], aes(x = x, y = y, xend = x, yend = -Inf), lty = "dashed") +
+  geom_point(data = filter(df, y == min(y)), aes(x, y), size = 4, shape = 21, fill = "yellow") +
+  geom_point(data = steps, aes(x, y), size = 3, shape = 21, fill = "blue", alpha = .5) +
+  geom_curve(data = steps, aes(x = x, y = y, xend = x2, yend = y2), curvature = 1, lty = "dotted") +
+  theme(
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  ) +
+  annotate("text", x = df[5, "x"], y = 1, label = "Initial value", hjust = -0.1, vjust = .8) +
+  annotate("text", x = df[which.min(df$y), "x"], y = 1, label = "Minimium", hjust = -0.1, vjust = .8) +
+  annotate("text", x = df[5, "x"], y = df[5, "y"], label = "Learning step", hjust = -.8, vjust = 0)
+```
+
+]
+
+---
+# Boosting hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+- Determines the impact of each tree on the final outcome
+
+- .red[Too large of a learning rate will have poor predictive capability]
+
+- Lower values are generally preferred:
+   - .green[they make the model robust to the specific characteristics of tree and thus allowing it to generalize well]
+   - .green[easier to stop prior to overfitting]
+   - .red[but run the risk of not reaching the optimum]
+   - .red[are more computationally demanding]
+
+]
+
+.pull-right[
+
+```{r learning-rate-too-big, echo=FALSE, fig.height=7}
+# create too small of a learning rate
+step <- 5
+step_size <- .05
+for(i in seq_len(10)) {
+  next_step <- max(step) + round(diff(range(max(step), which.min(df$y))) * step_size, 0)
+  step <- c(step, next_step)
+  next
+}
+
+too_small <- df[step, ] %>%
+  mutate(x2 = lag(x), y2 = lag(y))
+
+# plot
+p1 <- ggplot(df, aes(x, y)) +
+  geom_line(size = 1.5, alpha = .5) +
+  theme_classic() +
+  scale_y_continuous("Loss function", limits = c(0, 30)) +
+  xlab(expression(theta)) +
+  geom_segment(data = too_small[1, ], aes(x = x, y = y, xend = x, yend = -Inf), lty = "dashed") +
+  geom_point(data = too_small, aes(x, y), size = 3, shape = 21, fill = "blue", alpha = .5) +
+  geom_curve(data = too_small, aes(x = x, y = y, xend = x2, yend = y2), curvature = 1, lty = "dotted") +
+  theme(
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  ) +
+  annotate("text", x = df[5, "x"], y = 1, label = "Start", hjust = -0.1, vjust = .8) +
+  ggtitle("b) too small")
+
+# create too large of a learning rate
+too_large <- df[round(which.min(df$y) * (1 + c(-.9, -.6, -.2, .3)), 0), ] %>%
+  mutate(x2 = lag(x), y2 = lag(y))
+
+# plot
+p2 <- ggplot(df, aes(x, y)) +
+  geom_line(size = 1.5, alpha = .5) +
+  theme_classic() +
+  scale_y_continuous("Loss function", limits = c(0, 30)) +
+  xlab(expression(theta)) +
+  geom_segment(data = too_large[1, ], aes(x = x, y = y, xend = x, yend = -Inf), lty = "dashed") +
+  geom_point(data = too_large, aes(x, y), size = 3, shape = 21, fill = "blue", alpha = .5) +
+  geom_curve(data = too_large, aes(x = x, y = y, xend = x2, yend = y2), curvature = 1, lty = "dotted") +
+  theme(
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  ) +
+  annotate("text", x = too_large[1, "x"], y = 1, label = "Start", hjust = -0.1, vjust = .8) +
+  ggtitle("a) too big")
+
+gridExtra::grid.arrange(p2, p1, nrow = 2)
+```
+
+]
+
+---
+# Boosting hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+- Determines the impact of each tree on the final outcome
+
+- .red[Too large of a learning rate will have poor predictive capability]
+
+- Lower values are generally preferred (.01 - .1):
+   - .green[they make the model robust to the specific characteristics of tree and thus allowing it to generalize well]
+   - .green[easier to stop prior to overfitting]
+   - .red[but run the risk of not reaching the optimum]
+   - .red[are more computationally demanding]
+   - .bold[Requires more trees!]
+
+]
+
+.pull-right[
+
+```{r small-rate-more-trees, echo=FALSE, fig.height=5}
+set.seed(1112)
+df <- tibble::tibble(
+  x = seq(from = 0, to = 2 * pi, length = 500),
+  y = sin(x) + rnorm(length(x), sd = 0.5),
+  truth = sin(x)
+)
+
+results <- data.frame(NULL)
+
+for(i in c(1, seq(25, 3000, by = 25))) {
+  set.seed(8451)
+  gbm_model_hi <- gbm::gbm(truth ~ x, data = df, n.trees = i, shrinkage = .1, distribution = "gaussian")
+  set.seed(8451)
+  gbm_model_med <- gbm::gbm(truth ~ x, data = df, n.trees = i, shrinkage = .01, distribution = "gaussian")
+  set.seed(8451)
+  gbm_model_lo <- gbm::gbm(truth ~ x, data = df, n.trees = i, shrinkage = .001, distribution = "gaussian")
+  add_results <- df
+  add_results$`shrinkage = .1` <- predict(gbm_model_hi, df, n.trees = i)
+  add_results$`shrinkage = .01` <- predict(gbm_model_med, df, n.trees = i)
+  add_results$`shrinkage = .001` <- predict(gbm_model_lo, df, n.trees = i)
+  add_results$trees <- i
+  results <- rbind(results, add_results)
+}
+
+p <- results %>%
+  gather(rate, prediction, `shrinkage = .1`:`shrinkage = .001`) %>% 
+  mutate(
+    trees = as.integer(trees),
+    rate = fct_relevel(rate, "shrinkage = .1", "shrinkage = .01", "shrinkage = .001")
+    ) %>%
+  ggplot(aes(x, prediction)) +
+  ylab("y") +
+  geom_point(data = df, aes(x, y), alpha = .1, size = 2) +
+  geom_line(colour = "red", size = 1) +
+  facet_wrap(~ rate, nrow = 1) +
+  labs(title = 'Number of trees: {frame_time}') +
+  transition_time(trees)
+
+animate(p, renderer = gifski_renderer(), device = "png")
+```
+
+]
+
+---
+# Tree-specific hyperparameters `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+.pull-left[
+
+.blue.bold[Tree depth]
+
+- controls over-fitting
+- higher depth captures unique interactions
+- but runs risk of over-fitting
+- smaller depth (i.e. stumps) are computationally efficient
+- typical values: 3-8
+   - larger _n_ or _p_ are more tolerable to `r anicon::faa("arrow-up", animate = FALSE)` values
+
+
+.blue.bold[Min obs in terminal nodes]
+
+- controls over-fitting
+- higher values prevent a model from learning relations which might be highly specific to the particular sample selected for a tree
+- typically have small impact on performance
+- smaller values can help with imbalanced classes 
+
+]
+
+.pull-right[
+
+```{r depth-and-nodes, eval=FALSE}
+set.seed(1112)
+df <- tibble::tibble(
+  x = seq(from = 0, to = 2 * pi, length = 1000),
+  y = sin(x) + rnorm(length(x), sd = 0.5),
+  truth = sin(x)
+)
+
+rpartBoost <- function(x, y, data, num_trees = 100, learn_rate = 0.1, tree_depth = 6, minbucket = 5) {
+  x <- data[[deparse(substitute(x))]]
+  y <- data[[deparse(substitute(y))]]
+  G_b_hat <- matrix(0, nrow = length(y), ncol = num_trees + 1)
+  r <- y
+
+  for(tree in seq_len(num_trees)) {
+
+    g_b_tilde <- rpart(r ~ x, control = list(cp = 0, maxdepth = tree_depth, minbucket = minbucket))
+    g_b_hat <- learn_rate * predict(g_b_tilde)
+    G_b_hat[, tree + 1] <- G_b_hat[, tree] + matrix(g_b_hat)
+    r <- r - g_b_hat
+    colnames(G_b_hat) <- paste0("tree_", c(0, seq_len(num_trees)))
+  }
+  cbind(df, as.data.frame(G_b_hat)) %>%
+    gather(tree, prediction, starts_with("tree")) %>%
+    mutate(tree = stringr::str_extract(tree, "\\d+") %>% as.numeric())
+}
+
+m1 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 1, minbucket = 1) %>% mutate(depth = "Depth = 1", min_obs = "Min obs = 1")
+m2 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 3, minbucket = 1) %>% mutate(depth = "Depth = 3", min_obs = "Min obs = 1")
+m3 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 8, minbucket = 1) %>% mutate(depth = "Depth = 8", min_obs = "Min obs = 1")
+m4 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 1, minbucket = 5) %>% mutate(depth = "Depth = 1", min_obs = "Min obs = 5")
+m5 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 3, minbucket = 5) %>% mutate(depth = "Depth = 3", min_obs = "Min obs = 5")
+m6 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 8, minbucket = 5) %>% mutate(depth = "Depth = 8", min_obs = "Min obs = 5")
+m7 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 1, minbucket = 10) %>% mutate(depth = "Depth = 1", min_obs = "Min obs = 10")
+m8 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 3, minbucket = 10) %>% mutate(depth = "Depth = 3", min_obs = "Min obs = 10")
+m9 <- rpartBoost(x, y, data = df, num_trees = 200, learn_rate = 0.1, tree_depth = 8, minbucket = 10) %>% mutate(depth = "Depth = 8", min_obs = "Min obs = 10")
+
+p <- do.call(rbind, list(m1, m2, m3, m4, m5, m6, m7, m8, m9)) %>%
+  mutate(min_obs = factor(min_obs, levels = c("Min obs = 1", "Min obs = 5", "Min obs = 10"))) %>%
+  ggplot(aes(x, prediction)) +
+  ylab("y") +
+  geom_point(data = df, aes(x, y), alpha = .1) +
+  geom_line(data = df, aes(x, truth), color = "blue") +
+  geom_line(colour = "red", size = 1) +
+  facet_grid(min_obs ~ depth) +
+  transition_manual(tree) +
+  labs(title = 'Number of trees (learning rate = 1): {frame}')
+
+animate(p, renderer = gifski_renderer(), device = "png")
+```
+
+]
+
+---
+# Tuning `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+
+In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-`r anicon::faa("box-open", animate = "pulse", anitype="hover")`" performance!
+
+.pull-left[
+
+.blue.bold[Tree depth]
+
+- Determines just how "weak" our base learning is
+
+- Deeper trees are more prone to overfitting 
+
+- But stumps don't all you to catch interactions
+
+- Typical values are between 1-
+
+
+]
+
+.pull-right[
+
+```{r num-trees2, echo=FALSE, eval=FALSE}
+
+```
+
+]
 
 ---
 class: center, middle, inverse
 
-.font300.white[Tuning]
+.font300.white[Stochastic GBM]
 
 
 ---
@@ -544,8 +1160,6 @@ class: center, middle, inverse
 
 .font300.white[Extreme Gradient Boosting]
 
----
-# XGBoost
 
 
 ---

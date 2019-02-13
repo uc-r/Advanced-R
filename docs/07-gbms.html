@@ -39,6 +39,8 @@ background-size: cover
 
 - Boosted trees <span>&lt;i class="fas  fa-arrow-right faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> similar to, but quite different than, RFs <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/headpound_bunny.gif" style="height:1.5em; width:auto; "/&gt;</span>
 
+- Math isn't that complicated until you want to generalize to all loss functions
+
 ]
 
 --
@@ -47,13 +49,46 @@ background-size: cover
 
 .center.bold.font120[Overview]
 
-- Technical differences between RFs and GBMs
+- Fundamental differences between RFs and GBMs
 
-- Basic implementation
+- Basic GBM
 
-- Tuning parameters
+- Stochastic GBM
 
 - XGBoost
+
+]
+
+---
+# Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
+
+.pull-left[
+
+.center.bold.font120[Packages]
+
+
+```r
+library(gbm)
+library(xgboost)
+```
+
+
+]
+
+.pull-right[
+
+.center.bold.font120[Data]
+
+
+```r
+# ames data
+ames &lt;- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split &lt;- rsample::initial_split(ames, strata = "Sale_Price")
+ames_train &lt;- rsample::training(split)
+```
 
 ]
 
@@ -286,7 +321,9 @@ $$
 
 .pull-left[
 
-.center[Typically, this allows us to eek out additional predictive performance!]
+&lt;br&gt;&lt;br&gt;
+
+.center.font120.blue[Typically, this allows us to eek out additional predictive performance!]
 
 ]
 
@@ -297,16 +334,410 @@ $$
 ---
 class: center, middle, inverse
 
-.font300.white[Basic implementation]
+.font300.white[Basic GBM]
 
 ---
-# Basic implementation
+# Basic GBM
 
+.pull-left[
+
+.bold.font110[[gbm](https://github.com/gbm-developers/gbm)]
+- The original R implementation of GMBs (by Greg Ridgeway)
+- Slower than modern implementations (but still pretty fast)
+- Provides OOB error estimate
+- Supports the weighted tree traversal method for fast construction of PDPs
+- &lt;u&gt;Great looking support team&lt;/u&gt;
+   
+.bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
+- Shiny new version of gbm that is not backwards compatible
+- Faster and supports parallel tree building
+- Not currently listed on CRAN
+
+]
+
+.pull-right[
+
+&lt;img src="images/gbm-developers.png" width="1327" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Basic GBM .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
+
+.pull-left[
+
+.bold.font110[[gbm](https://github.com/gbm-developers/gbm)]
+- The original R implementation of GMBs (by Greg Ridgeway)
+- Slower than modern implementations (but still pretty fast)
+- Provides OOB error estimate
+- Supports the weighted tree traversal method for fast construction of PDPs
+- Great looking support team
+   
+.opacity20[   
+.bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
+- Shiny new version of gbm that is not backwards compatible
+- Faster and supports parallel tree building
+- Not currently listed on CRAN
+]
+]
+
+.pull-right[
+.center.bold.font90[Let's run your first GBM model]
+
+
+```r
+set.seed(123)
+ames_gbm &lt;- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. 
+  n.trees = 5000, 
+  shrinkage = 0.1, 
+  interaction.depth = 1, 
+  n.minobsinnode = 10, 
+  cv.folds = 5 
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE &lt;- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+## [1] 27028.1
+```
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~30 secs <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+]
+
+---
+# What's going on?
+
+
+.pull-left.font90[
+
+&lt;br&gt;
+
+* .bold[`distribution`]: specify distribution of response variable; `gbm` will make intelligent guess
+
+* .bold[`n.trees`]: number of sequential trees to fit
+
+* .bold[`shrinkage`]: how quickly do we improve on each iteration (aka _learning rate_)
+
+* .bold[`interaction.depth`]: how weak of a learner do we want
+
+* .bold[`n.minobsinnode`]: minimum number of observations in the trees terminal nodes
+
+* .bold[`cv.folds`]: _k_-fold cross validation
+
+]
+
+.pull-right[
+
+.opacity20.center.bold.font90[Let's run your first GBM model]
+
+
+```r
+set.seed(123)
+ames_gbm &lt;- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+* distribution = "gaussian", # or bernoulli, multinomial, etc.
+* n.trees = 5000,
+* shrinkage = 0.1,
+* interaction.depth = 1,
+* n.minobsinnode = 10,
+* cv.folds = 5
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE &lt;- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+## [1] 27028.1
+```
+
+.opacity20.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~30 secs <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+]
+
+---
+# What's going on?
+
+
+.pull-left.font90[
+
+.bold.center[Tunable Hyperparameters]
+
+* .opacity20[`distribution`: specify distribution of response variable; `gbm` will make intelligent guess]
+
+* .bold[`n.trees`]: number of sequential trees to fit
+
+* .bold[`shrinkage`]: how quickly do we improve on each iteration (aka _learning rate_)
+
+* .bold[`interaction.depth`]: how weak of a learner do we want
+
+* .bold[`n.minobsinnode`]: minimum number of observations in the trees terminal nodes
+
+* .opacity20[`cv.folds`: _k_-fold cross validation]
+
+]
+
+.pull-right[
+
+.opacity20.center.bold.font90[Let's run your first GBM model]
+
+
+```r
+set.seed(123)
+ames_gbm &lt;- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+* distribution = "gaussian", # or bernoulli, multinomial, etc.
+* n.trees = 5000,
+* interaction.depth = 1,
+* shrinkage = 0.1,
+* cv.folds = 5
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE &lt;- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+## [1] 27028.1
+```
+
+.opacity20.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~30 secs <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance!
+
+--
+
+We can divide hyperparameters into 2 primary categories:
+
+--
+
+.pull-left[
+
+.center.bold[Boosting Parameters]
+
+- Number of trees
+
+- Learning rate
+
+- More to come!
+
+]
+
+.pull-right[
+
+.center.bold[Tree-specific Parameters]
+
+- Tree depth
+
+- Minimum obs in terminal node
+
+- And others
+
+]
+
+---
+# Boosting hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue.bold[Number of trees]
+
+- The averaging in bagging and RF makes it very difficult to overfit with too many trees
+
+- GBMs will chase residuals as long as you allow them 
+
+- Consequently:
+   - We must provide enough trees to minimize error
+   - But not too many where we begin to overfit
+
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/num-trees-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Boosting hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>  .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
+
+.pull-left[
+
+.blue.bold[Number of trees]
+
+- The averaging in bagging and RF makes it very difficult to overfit with too many trees
+
+- GBMs will chase residuals as long as you allow them 
+
+- Consequently:
+   - We must provide enough trees to minimize error
+   - But not too many where we begin to overfit
+   - .red[plus, number of trees is dependent on other hyperparameters]
+
+.center.bold.blue[Use CV or OOB] 
+
+]
+
+.pull-right[
+
+
+```r
+gbm.perf(ames_gbm, method = "cv") # or "OOB"
+```
+
+&lt;img src="07-gbms_files/figure-html/unnamed-chunk-1-1.png" style="display: block; margin: auto;" /&gt;
+
+```
+## [1] 1387
+```
+
+&lt;br&gt;   
+.center.bold.blue[Use CV or OOB]   
+
+]
+
+---
+# Boosting hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+.font120[
+- Determines the impact of each tree on the final outcome
+]
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/learning-rate-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Boosting hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+- Determines the impact of each tree on the final outcome
+
+- .red[Too large of a learning rate will have poor predictive capability]
+
+- Lower values are generally preferred:
+   - .green[they make the model robust to the specific characteristics of tree and thus allowing it to generalize well]
+   - .green[easier to stop prior to overfitting]
+   - .red[but run the risk of not reaching the optimum]
+   - .red[are more computationally demanding]
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/learning-rate-too-big-1.png" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Boosting hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue.bold[Learning rate] (aka shrinkage)
+
+- Determines the impact of each tree on the final outcome
+
+- .red[Too large of a learning rate will have poor predictive capability]
+
+- Lower values are generally preferred (.01 - .1):
+   - .green[they make the model robust to the specific characteristics of tree and thus allowing it to generalize well]
+   - .green[easier to stop prior to overfitting]
+   - .red[but run the risk of not reaching the optimum]
+   - .red[are more computationally demanding]
+   - .bold[Requires more trees!]
+
+]
+
+.pull-right[
+
+&lt;img src="07-gbms_files/figure-html/small-rate-more-trees-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Tree-specific hyperparameters <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.pull-left[
+
+.blue.bold[Tree depth]
+
+- controls over-fitting
+- higher depth captures unique interactions
+- but runs risk of over-fitting
+- smaller depth (i.e. stumps) are computationally efficient
+- typical values: 3-8
+   - larger _n_ or _p_ are more tolerable to <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> values
+
+
+.blue.bold[Min obs in terminal nodes]
+
+- controls over-fitting
+- higher values prevent a model from learning relations which might be highly specific to the particular sample selected for a tree
+- typically have small impact on performance
+- smaller values can help with imbalanced classes 
+
+]
+
+.pull-right[
+
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance!
+
+.pull-left[
+
+.blue.bold[Tree depth]
+
+- Determines just how "weak" our base learning is
+
+- Deeper trees are more prone to overfitting 
+
+- But stumps don't all you to catch interactions
+
+- Typical values are between 1-
+
+
+]
+
+.pull-right[
+
+
+
+]
 
 ---
 class: center, middle, inverse
 
-.font300.white[Tuning]
+.font300.white[Stochastic GBM]
 
 
 ---
@@ -314,8 +745,6 @@ class: center, middle, inverse
 
 .font300.white[Extreme Gradient Boosting]
 
----
-# XGBoost
 
 
 ---
