@@ -722,8 +722,9 @@ ames_gbm <- gbm(
   data = ames_train,
   distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
   n.trees = 5000, #<<
-  interaction.depth = 1, #<<
   shrinkage = 0.1, #<<
+  interaction.depth = 1, #<<
+  n.minobsinnode = 10, #<<
   cv.folds = 5 #<<
   )  
 
@@ -1068,7 +1069,7 @@ animate(p, renderer = gifski_renderer(), device = "png")
 
 .pull-right[
 
-```{r depth-and-nodes, eval=FALSE}
+```{r depth-and-nodes, echo=FALSE}
 set.seed(1112)
 df <- tibble::tibble(
   x = seq(from = 0, to = 2 * pi, length = 1000),
@@ -1121,32 +1122,127 @@ animate(p, renderer = gifski_renderer(), device = "png")
 
 ]
 
+
 ---
-# Tuning `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
+# Tuning strategy `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`
 
-In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-`r anicon::faa("box-open", animate = "pulse", anitype="hover")`" performance!
+<br>
+.font120[
+1. Choose a relatively high learning rate. Generally the default value of 0.1 works but somewhere between 0.05 to 0.2 should work for different problems
 
+2. Determine the optimum number of trees for this learning rate. 
+
+3. Tune learning rate and assess speed vs. performance
+
+4. Tune tree-specific parameters for decided learning rate and number of trees. 
+
+5. Lower the learning rate and increase the estimators proportionally to get more robust models.
+]
+
+---
+# Tuning strategy `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`  .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4]
+
+.scrollable90[
+.pull-left[
+<br>
+.font110[
+1. fix tree hyperparameters
+    - moderate tree depth
+    - default min obs
+2. set our learning rate at .01
+3. increase CV to ensure unbiased error estimate
+4. Results
+   - Lowest error rate yet ($21,914.55)!
+   - Used nearly all our trees $\rightarrow$ increase to 6000?
+   - took $\approx$ 2.25 min
+5. Compared to learning rate of .001
+   - error rate of $24,791.66
+   - took $\approx$ 4 min
+]
+]
+
+.pull-right[
+
+.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~2 mins `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+```{r tune1}
+set.seed(123)
+ames_gbm1 <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
+  n.trees = 5000, #<<
+  shrinkage = 0.01, #<<
+  interaction.depth = 3, #<<
+  n.minobsinnode = 10, #<<
+  cv.folds = 10 #<<
+  )
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm1$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm1$cv.error[min_MSE])
+
+gbm.perf(ames_gbm1, method = "cv")
+```
+
+]
+]
+
+---
+# Tuning strategy `r anicon::faa("cog", animate = 'spin', speed = 'slow', colour = "red")`  .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 5]
+
+.scrollable90[
 .pull-left[
 
-.blue.bold[Tree depth]
+Now let's tune the tree-specific hyperparameters
 
-- Determines just how "weak" our base learning is
+* we could do it in `caret` but lets use functional programming
 
-- Deeper trees are more prone to overfitting 
+```{r hell-yeah, echo=FALSE, out.width="25%", out.height="25%"}
+knitr::include_graphics("images/hell-yeah.png")
+```
 
-- But stumps don't all you to catch interactions
+* assess 3 values for tree depth
 
-- Typical values are between 1-
-
+* assess 3 values for min obs in terminal node
 
 ]
 
 .pull-right[
 
-```{r num-trees2, echo=FALSE, eval=FALSE}
+.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This grid search takes ~2 mins `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
 
+```{r tune12, eval=FALSE}
+# search grid
+hyper_grid <- expand.grid(
+  n.trees = 6000,
+  shrinkage = .01
+)
+
+set.seed(123)
+ames_gbm1 <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
+  n.trees = 6000, #<<
+  shrinkage = 0.01, #<<
+  interaction.depth = 3, #<<
+  n.minobsinnode = 10, #<<
+  cv.folds = 10 #<<
+  )
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm1$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm1$cv.error[min_MSE])
+
+gbm.perf(ames_gbm1, method = "cv")
 ```
 
+]
 ]
 
 ---

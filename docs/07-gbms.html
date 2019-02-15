@@ -496,8 +496,9 @@ ames_gbm &lt;- gbm(
   data = ames_train,
 * distribution = "gaussian", # or bernoulli, multinomial, etc.
 * n.trees = 5000,
-* interaction.depth = 1,
 * shrinkage = 0.1,
+* interaction.depth = 1,
+* n.minobsinnode = 10,
 * cv.folds = 5
   )  
 
@@ -706,32 +707,138 @@ gbm.perf(ames_gbm, method = "cv") # or "OOB"
 
 .pull-right[
 
+&lt;img src="07-gbms_files/figure-html/depth-and-nodes-1.gif" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+# Tuning strategy <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+&lt;br&gt;
+.font120[
+1. Choose a relatively high learning rate. Generally the default value of 0.1 works but somewhere between 0.05 to 0.2 should work for different problems
+
+2. Determine the optimum number of trees for this learning rate. 
+
+3. Tune learning rate and assess speed vs. performance
+
+4. Tune tree-specific parameters for decided learning rate and number of trees. 
+
+5. Lower the learning rate and increase the estimators proportionally to get more robust models.
 ]
 
 ---
-# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+# Tuning strategy <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>  .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 4]
 
-In contrast to Random Forests, GBMs .bold.red[do not] provide good "out-of-the-<span>&lt;i class="fas  fa-box-open faa-pulse animated-hover "&gt;&lt;/i&gt;</span>" performance!
+.scrollable90[
+.pull-left[
+&lt;br&gt;
+.font110[
+1. fix tree hyperparameters
+    - moderate tree depth
+    - default min obs
+2. set our learning rate at .01
+3. increase CV to ensure unbiased error estimate
+4. Results
+   - Lowest error rate yet ($21,914.55)!
+   - Used nearly all our trees `\(\rightarrow\)` increase to 6000?
+   - took `\(\approx\)` 2.25 min
+5. Compared to learning rate of .001
+   - error rate of $24,791.66
+   - took `\(\approx\)` 4 min
+]
+]
 
+.pull-right[
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~2 mins <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+set.seed(123)
+ames_gbm1 &lt;- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+* distribution = "gaussian", # or bernoulli, multinomial, etc.
+* n.trees = 5000,
+* shrinkage = 0.01,
+* interaction.depth = 3,
+* n.minobsinnode = 10,
+* cv.folds = 10
+  )
+
+# find index for n trees with minimum CV error
+min_MSE &lt;- which.min(ames_gbm1$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm1$cv.error[min_MSE])
+## [1] 21914.55
+
+gbm.perf(ames_gbm1, method = "cv")
+```
+
+&lt;img src="07-gbms_files/figure-html/tune1-1.png" style="display: block; margin: auto;" /&gt;
+
+```
+## [1] 4999
+```
+
+]
+]
+
+---
+# Tuning strategy <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>  .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 5]
+
+.scrollable90[
 .pull-left[
 
-.blue.bold[Tree depth]
+Now let's tune the tree-specific hyperparameters
 
-- Determines just how "weak" our base learning is
+* we could do it in `caret` but lets use functional programming
 
-- Deeper trees are more prone to overfitting 
+&lt;img src="images/hell-yeah.png" width="25%" height="25%" style="display: block; margin: auto;" /&gt;
 
-- But stumps don't all you to catch interactions
+* assess 3 values for tree depth
 
-- Typical values are between 1-
-
+* assess 3 values for min obs in terminal node
 
 ]
 
 .pull-right[
 
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~2 mins <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
 
 
+```r
+# search grid
+hyper_grid &lt;- expand.grid(
+  n.trees = 6000,
+  shrinkage = .01
+)
+
+set.seed(123)
+ames_gbm1 &lt;- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+* distribution = "gaussian", # or bernoulli, multinomial, etc.
+* n.trees = 6000,
+* shrinkage = 0.01,
+* interaction.depth = 3,
+* n.minobsinnode = 10,
+* cv.folds = 10
+  )
+
+# find index for n trees with minimum CV error
+min_MSE &lt;- which.min(ames_gbm1$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm1$cv.error[min_MSE])
+
+gbm.perf(ames_gbm1, method = "cv")
+```
+
+]
 ]
 
 ---
