@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Model Stacking &amp; AutoML</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-03-01" />
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: clear, center, middle
+
+background-image: url(images/stacking-icon.jpg)
+background-position: center
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font300.white[Model Stacking &amp; AutoML]
+
+
+---
+# Introduction
+
+.pull-left[
+
+.center.bold.font120[Thoughts]
+
+- Original concept formalized by Leo Breiman [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](http://statistics.berkeley.edu/sites/default/files/tech-reports/367.pdf)
+
+- Theoretically formalized in 2007 as ___Super Learners___ [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://www.degruyter.com/view/j/sagmb.2007.6.issue-1/sagmb.2007.6.1.1309/sagmb.2007.6.1.1309.xml) where the authors...
+
+- proved that super learners will learn the optimal combination of supplied base learners and will typically perform as well as or better than any of the individual base learners.
+
+- Nearly all prediction competitions are won with super learners
+
+]
+
+--
+
+.pull-right[
+
+.center.bold.font120[Overview]
+
+- Basic idea
+
+- Stacking existing models
+
+- Stacking a grid search
+
+- Auto machine learning search
+
+]
+
+
+---
+# Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
+
+.pull-left[
+
+.center.bold.font120[Packages]
+
+
+```r
+library(h2o)
+h2o.init(max_mem_size = "5g")
+##  Connection successful!
+## 
+## R is connected to the H2O cluster: 
+##     H2O cluster uptime:         43 minutes 21 seconds 
+##     H2O cluster timezone:       America/New_York 
+##     H2O data parsing timezone:  UTC 
+##     H2O cluster version:        3.22.1.1 
+##     H2O cluster version age:    1 month and 21 days  
+##     H2O cluster name:           H2O_started_from_R_b294776_fyi592 
+##     H2O cluster total nodes:    1 
+##     H2O cluster total memory:   4.99 GB 
+##     H2O cluster total cores:    8 
+##     H2O cluster allowed cores:  8 
+##     H2O cluster healthy:        TRUE 
+##     H2O Connection ip:          localhost 
+##     H2O Connection port:        54321 
+##     H2O Connection proxy:       NA 
+##     H2O Internal Security:      FALSE 
+##     H2O API Extensions:         XGBoost, Algos, AutoML, Core V3, Core V4 
+##     R Version:                  R version 3.5.2 (2018-12-20)
+```
+
+
+
+
+
+]
+
+.pull-right[
+
+.center.bold.font120[Data]
+
+
+```r
+# ames data
+ames &lt;- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split &lt;- rsample::initial_split(ames, strata = "Sale_Price")
+ames_train &lt;- rsample::training(split) %&gt;%
+  as.h2o()
+```
+
+]
+
+---
+class: clear, center, middle, inverse
+
+.font300.white[Basic Idea]
+
+
+---
+# Common ensemble methods
+
+&lt;br&gt;
+.font110[
+* Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms.
+
+* Combining multiple predictors is not new
+   - Bagging
+   - Random forests
+   - Gradient boosting
+   
+* However, these ensemble approaches combine common weak base learning algorithms (i.e. decision trees)  
+
+* Stacking, on the other hand, is designed to .bold.blue[ensemble a diverse group of strong learners.]
+]
+
+---
+# Super learner algorithm
+
+Part 1: Set up the ensemble
+- Specify a list of _L_ base learners (with a specific set of model parameters).
+- Specify a metalearning algorithm. Can be any one of the algorithms discussed in the previous chapters but most often is regularized regression.
+
+---
+# Super learner algorithm
+
+.opacity[Part 1: Set up the ensemble]
+
+Part 2: Train the ensemble
+- Train each of the _L_ base learners on the training set.
+- Perform k-fold cross-validation on each of these learners and collect the cross-validated predicted values from each of the _L_ algorithms (must use the same k-folds for each base learner). These predicted values represent  `\(p_1,…,p_L\)`.
+- The _N_ cross-validated predicted values from each of the _L_ algorithms can be combined to form a new `\(N \times L\)` matrix (represented by _Z_). This matrix, along with the original response vector (_y_), is called the “level-one” data. (N = number of rows in the training set.)
+
+&lt;img src="images/stacking-equation.png" width="495" style="display: block; margin: auto;" /&gt;
+
+- Train the metalearning algorithm on the level-one data ( `\(y=f(Z)\)` ). The “ensemble model” consists of the __L__ base learning models and the metalearning model, which can then be used to generate predictions on a test set.
+
+---
+# Super learner algorithm
+
+.opacity[Part 1: Set up the ensemble]
+
+.opacity[Part 2: Train the ensemble]
+
+Part 3: Predict on new data
+- To generate ensemble predictions, first generate predictions from the base learners.
+- Feed those predictions into the metalearner to generate the ensemble prediction.
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+--
+
+.center.bold.font90[_Stacking never does worse than selecting the single best base learner on the training data. .blue[The biggest gains are usually produced when stacking base learners that have high variability, and uncorrelated, predicted values.] The more similar the predicted values, the less advantage there is in stacking._]
+
+---
+# Package implementation 📦
+&lt;br&gt;
+.font110[
+* [h2o](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html): My go-to package for stacking and autoML. Provides three appraoches for model stacking.
+
+* [SuperLearner](https://github.com/ecpolley/SuperLearner): original implementation, works with `caret` and many other algorithm packages.  Worth exploring.
+
+* [subsemble](https://github.com/ledell/subsemble): developed by Erin Ledell who now is one of the developers of __h2o__. Maintained for backward compatibility but not forward development
+
+* [caretEnsemble](https://github.com/zachmayer/caretEnsemble): implements a boostrapped (rather than cross-validated) version of stacking. The bootstrapped version will train faster since bootrapping (with a train/test) is a fraction of the work as k-fold cross-validation, however the the ensemble performance suffers as a result of this shortcut.
+]
+
+---
+class: clear, center, middle, inverse
+
+.font300.white[Stacking Existing Models]
+
+
+---
+class: clear, center, middle, inverse
+
+.font300.white[Stacking a Grid Search]
+
+
+---
+class: clear, center, middle, inverse
+
+.font300.white[Auto ML Search]
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
