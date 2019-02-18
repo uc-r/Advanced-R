@@ -16,3 +16,10 @@ lattice
 gbm
 xgboost
 recipes
+pdp
+vip
+ranger
+DT
+htmlwidgets
+sparkline
+h2o

@@ -34,7 +34,7 @@ the material covered in this training:
 | :--------------------------------------------------------------------------------------------------- | :-----------: |
 | Breakfast / Social time                                                                              |  8:00 - 9:00  |
 | [Decision trees, bagging, & random forests](https://uc-r.github.io/Advanced-R/06-random-forest.html) | 9:00 - 11:00  |
-| Gradient boosting machines                                                                           | 11:00 - 12:00 |
+| [Gradient boosting machines](https://uc-r.github.io/Advanced-R/07-gbms.html)                         | 11:00 - 12:00 |
 | Lunch                                                                                                | 12:00 - 1:00  |
 | Stacked models & autoML                                                                              |  1:00 - 2:30  |
 | Interpretable machine learning                                                                       |  2:45 - 4:00  |
