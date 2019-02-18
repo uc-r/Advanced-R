@@ -7,6 +7,7 @@
     <meta name="date" content="2019-03-01" />
     <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
     <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="scrollable.css" type="text/css" />
     <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
     <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
@@ -346,7 +347,7 @@ class: center, middle, inverse
 - Slower than modern implementations (but still pretty fast)
 - Provides OOB error estimate
 - Supports the weighted tree traversal method for fast construction of PDPs
-- &lt;u&gt;Great looking support team&lt;/u&gt;
+
    
 .bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
 - Shiny new version of gbm that is not backwards compatible
@@ -358,6 +359,8 @@ class: center, middle, inverse
 .pull-right[
 
 &lt;img src="images/gbm-developers.png" width="1327" style="display: block; margin: auto;" /&gt;
+
+.center.bold.red[Great looking support team <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1542340460/4963/blush.gif" style="height:2em; width:auto; "/&gt;</span>]
 
 ]
 
@@ -371,8 +374,7 @@ class: center, middle, inverse
 - Slower than modern implementations (but still pretty fast)
 - Provides OOB error estimate
 - Supports the weighted tree traversal method for fast construction of PDPs
-- Great looking support team
-   
+
 .opacity20[   
 .bold.font110[[gbm3](https://github.com/gbm-developers/gbm3)]
 - Shiny new version of gbm that is not backwards compatible
@@ -558,7 +560,7 @@ We can divide hyperparameters into 2 primary categories:
 
 - The averaging in bagging and RF makes it very difficult to overfit with too many trees
 
-- GBMs will chase residuals as long as you allow them 
+- GBMs will chase residuals as long as you allow them to
 
 - Consequently:
    - We must provide enough trees to minimize error
@@ -582,7 +584,7 @@ We can divide hyperparameters into 2 primary categories:
 
 - The averaging in bagging and RF makes it very difficult to overfit with too many trees
 
-- GBMs will chase residuals as long as you allow them 
+- GBMs will chase residuals as long as you allow them to
 
 - Consequently:
    - We must provide enough trees to minimize error
@@ -691,7 +693,7 @@ gbm.perf(ames_gbm, method = "cv") # or "OOB"
 - controls over-fitting
 - higher depth captures unique interactions
 - but runs risk of over-fitting
-- smaller depth (i.e. stumps) are computationally efficient
+- smaller depth (i.e. stumps) are computationally efficient (but .bold[require more trees!])
 - typical values: 3-8
    - larger _n_ or _p_ are more tolerable to <span>&lt;i class="fas  fa-arrow-up faa-FALSE animated "&gt;&lt;/i&gt;</span> values
 
@@ -752,7 +754,7 @@ gbm.perf(ames_gbm, method = "cv") # or "OOB"
 
 .pull-right[
 
-.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~2 mins <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This model run takes ~2 mins <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
 
 
 ```r
@@ -806,40 +808,61 @@ Now let's tune the tree-specific hyperparameters
 ]
 
 .pull-right[
+.center[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+.center.font90.bold[This grid search takes ~30 mins; remember, I said the ML process is more of a marathon than a sprint!!]
+.center[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
 
-.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~2 mins <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
 
 
 ```r
 # search grid
 hyper_grid &lt;- expand.grid(
   n.trees = 6000,
-  shrinkage = .01
+  shrinkage = .01,
+* interaction.depth = c(3, 5, 7),
+* n.minobsinnode = c(5, 10, 15)
 )
 
-set.seed(123)
-ames_gbm1 &lt;- gbm(
-  formula = Sale_Price ~ .,
-  data = ames_train,
-* distribution = "gaussian", # or bernoulli, multinomial, etc.
-* n.trees = 6000,
-* shrinkage = 0.01,
-* interaction.depth = 3,
-* n.minobsinnode = 10,
-* cv.folds = 10
+model_fit &lt;- function(n.trees, shrinkage, interaction.depth, n.minobsinnode) {
+  set.seed(123)
+  m &lt;- gbm(
+    formula = Sale_Price ~ .,
+    data = ames_train,
+    distribution = "gaussian",
+    n.trees = n.trees,
+*   shrinkage = shrinkage,
+*   interaction.depth = interaction.depth,
+    n.minobsinnode = n.minobsinnode,
+    cv.folds = 10
   )
+  # compute RMSE
+  sqrt(min(m$cv.error))
+}
 
-# find index for n trees with minimum CV error
-min_MSE &lt;- which.min(ames_gbm1$cv.error)
+hyper_grid$rmse &lt;- pmap_dbl(
+  hyper_grid,
+  ~ model_fit(
+    n.trees = ..1,
+    shrinkage = ..2,
+    interaction.depth = ..3,
+    n.minobsinnode = ..4
+    )
+)
 
-# get MSE and compute RMSE
-sqrt(ames_gbm1$cv.error[min_MSE])
-
-gbm.perf(ames_gbm1, method = "cv")
+arrange(hyper_grid, rmse)
+##   n.trees shrinkage interaction.depth n.minobsinnode     rmse
+## 1    6000      0.01                 7              5 20683.65
+## 2    6000      0.01                 5              5 20746.36
+## 3    6000      0.01                 7             10 21114.62
+## 4    6000      0.01                 3              5 21126.33
+## 5    6000      0.01                 5             10 21228.68
+## 6    6000      0.01                 7             15 21246.73
+## 7    6000      0.01                 5             15 21272.91
+## 8    6000      0.01                 3             10 21767.08
+## 9    6000      0.01                 3             15 21862.35
 ```
 
-]
-]
+]]
 
 ---
 class: center, middle, inverse
@@ -848,10 +871,423 @@ class: center, middle, inverse
 
 
 ---
+# Adding randomness
+
+&lt;br&gt;
+
+- Friedman (1999) [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf) introduced stochastic gradient boosting
+
+- A big insight into bagging ensembles and random forest was allowing trees to be created from random subsamples of the training dataset <span>&lt;i class="fas  fa-arrow-right faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span> minimizes tree correlation among sequential trees
+
+- Improves computational time since we're reducing *n*
+
+- A few variants of stochastic boosting that can be used:
+   - Subsample rows before creating each tree (__gbm__)
+   - Subsample columns before creating each tree (__h2o__ &amp; __xgboost__)
+   - Subsample columns before considering each split (__h2o__ &amp; __xgboost__)
+
+- .blue.bold[Pro tip]: Generally, aggressive sub-sampling such as selecting only 50% of the data has shown to be beneficial. Typical values: 0.5-0.8
+
+---
+# Applying
+
+.pull-left[
+
+- start by assessing if values between 0.5-0.8 outperform your previous best model
+
+- zoom in with a second round of tuning
+
+- smaller values will tell you that overfitting was occurring
+
+]
+
+.pull-right[
+
+
+```r
+*bag_frac &lt;- c(.5, .65, .8)
+
+for(i in bag_frac) {
+  set.seed(123)
+  m &lt;- gbm(
+    formula = Sale_Price ~ .,
+    data = ames_train,
+    distribution = "gaussian",
+    n.trees = 6000, 
+    shrinkage = 0.01, 
+    interaction.depth = 7, 
+    n.minobsinnode = 5,
+*   bag.fraction = i,
+    cv.folds = 10 
+    )
+  # compute RMSE
+  print(sqrt(min(m$cv.error)))
+}
+## [1] 20683.65
+## [1] 20398.93
+## [1] 20287.76
+```
+
+]
+
+---
 class: center, middle, inverse
 
 .font300.white[Extreme Gradient Boosting]
 
+---
+# XGBoost Advantage
+
+&lt;br&gt;
+Extreme Gradient boosting (XGBoost) provides a few advantages over traditional boosting:
+
+- .bold[Regularization]: Standard GBM implementation has no regularization like XGBoost; helps to reduce overfitting.
+
+- .bold[Parallel Processing]: GPU and Spark compatible 
+
+- .bold[Loss functions]: allows users to define custom optimization objectives and evaluation criteria
+
+- .bold[Tree pruning]: splits up to the max depth specified and then pruning; uses the weakest learner required
+
+- .bold[Continue existing model]: User can start training an XGBoost model from its last iteration of previous run 
+
+.center.bold.blue[Super powerful...super <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1471045885/967/wtf.gif?1471045885" style="height:1em; width:auto; "/&gt;</span> awesome!]
+
+---
+# Prereqs
+
+.pull-left[
+
+* __xgboost__ requires that our features are one-hot encoded
+
+* __caret__ and __h2o::h2o.xgboost__ can automate this for you
+
+]
+
+.pull-right[
+
+
+```r
+library(recipes)
+xgb_prep &lt;- recipe(Sale_Price ~ ., ames_train) %&gt;%
+  step_dummy(all_nominal(), one_hot = TRUE) %&gt;%
+  prep(training = ames_train, retain = TRUE) %&gt;%
+  juice()
+
+X &lt;- as.matrix(xgb_prep[setdiff(names(xgb_prep), "Sale_Price")])
+Y &lt;- xgb_prep$Sale_Price
+```
+
+]
+
+---
+# First XGBoost model
+
+.pull-left.font90[
+
+&lt;br&gt;
+
+* .bold[`nrounds`]: 6,000 trees 
+
+* .bold[`objective`]: `reg:linear` for regression but other options exist (i.e. `reg:logistic`, `binary:logistic`, `num_class`)
+
+* .bold[`early_stopping_rounds`]: stop training if CV RMSE doesn't improve for 50 trees in a row 
+
+* .bold[`nfold`]: 10-fold CV 
+
+&lt;br&gt;
+
+.center.bold[What's up with the results <span style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="https://emojis.slackmojis.com/emojis/images/1542340469/4974/notinterested.gif" style="height:2.5em; width:auto; "/&gt;</span>!!!]
+
+]
+
+.pull-right[
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~1 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+set.seed(123)
+ames_xgb &lt;- xgb.cv(
+  data = X,
+  label = Y,
+  nrounds = 6000,
+  objective = "reg:linear",
+  early_stopping_rounds = 50, 
+  nfold = 10,
+  verbose = 0,
+  )  
+
+ames_xgb$evaluation_log %&gt;% tail()
+##    iter train_rmse_mean train_rmse_std test_rmse_mean test_rmse_std
+## 1:  244        475.6274       56.41166       23973.07      2590.963
+## 2:  245        470.9972       57.11887       23973.70      2590.520
+## 3:  246        463.2655       57.94811       23973.26      2590.541
+## 4:  247        458.2460       58.34277       23973.23      2590.775
+## 5:  248        451.8473       58.35864       23973.05      2590.151
+## 6:  249        445.7978       57.72149       23972.80      2591.660
+```
+
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+&lt;br&gt;
+.pull-left.font110[
+1. Crank up the trees and tune learning rate with early stopping
+   - initial test RMSE results:
+   - `eta = .3` (default): 23,972 w/249 trees (1 min)
+   - `eta = .1`: 22,567 w/498 trees (2.75 min)
+   - `eta = .01`: 22,591 w/3146 trees (18 min)
+
+]
+
+.pull-right[
+
+
+```r
+set.seed(123)
+ames_xgb &lt;- xgb.cv(
+  data = X,
+  label = Y,
+  nrounds = 6000,
+  objective = "reg:linear",
+  early_stopping_rounds = 50, 
+  nfold = 10,
+  verbose = 0,
+* params = list(eta = .1)
+  )  
+
+ames_xgb$evaluation_log %&gt;% tail()
+##    iter train_rmse_mean train_rmse_std test_rmse_mean test_rmse_std
+## 1:  493        1426.474       62.82684       22565.68      2065.301
+## 2:  494        1422.654       62.65673       22566.34      2063.881
+## 3:  495        1415.531       60.27212       22566.58      2063.937
+## 4:  496        1410.478       61.11700       22566.61      2063.776
+## 5:  497        1406.350       61.90959       22566.90      2063.995
+## 6:  498        1400.308       61.81945       22567.10      2062.610
+```
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.scrollable90[
+.pull-left.font110[
+&lt;br&gt;
+1. .opacity[Crank up the trees and tune learning rate with early stopping]
+2. Tune tree-specific hyperparameters
+   - tree depth
+   - instances required to make additional split
+
+]
+
+.pull-right[
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~30 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+# grid
+hyper_grid &lt;- expand.grid(
+  eta = .1,
+* max_depth = c(5, 7, 9),
+* min_child_weight = c(5, 10, 15),
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m &lt;- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+*   params = list(
+*     eta = hyper_grid$eta[i],
+*     max_depth = hyper_grid$max_depth[i],
+*     min_child_weight = hyper_grid$min_child_weight[i]
+*   )
+  )
+  hyper_grid$rmse[i] &lt;- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+##   eta max_depth min_child_weight     rmse
+## 1 0.1         5                5 21995.84
+## 2 0.1         9                5 22375.97
+## 3 0.1         7                5 22556.79
+## 4 0.1         7               10 22786.54
+## 5 0.1         5               10 22983.33
+## 6 0.1         5               15 23099.17
+## 7 0.1         7               15 23697.61
+## 8 0.1         9               10 23767.89
+## 9 0.1         9               15 23943.83
+```
+
+]
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.scrollable90[
+.pull-left.font110[
+&lt;br&gt;
+1. .opacity[Crank up the trees and tune learning rate with early stopping]
+2. .opacity[Tune tree-specific hyperparameters]
+3. Add stochastic attributes with
+   - subsampling rows for each tree
+   - subsampling columns for each tree 
+
+]
+
+.pull-right[
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This grid search takes ~30 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+# grid
+hyper_grid &lt;- expand.grid(
+  eta = .1,
+* subsample = c(.5, .65, .8, 1),
+* colsample_bytree = c(.5, .65, .8, 1),
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m &lt;- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+*   params = list(
+*     eta = hyper_grid$eta[i],
+*     subsample = hyper_grid$subsample[i],
+*     colsample_bytree = hyper_grid$colsample_bytree[i]
+*   )
+  )
+  hyper_grid$rmse[i] &lt;- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+##    eta subsample colsample_bytree     rmse
+## 1  0.1      0.65             1.00 22135.71
+## 2  0.1      0.80             1.00 22482.75
+## 3  0.1      0.65             0.80 22492.82
+## 4  0.1      1.00             1.00 22558.62
+## 5  0.1      0.80             0.80 22667.84
+## 6  0.1      0.50             1.00 22782.88
+## 7  0.1      0.65             0.65 22785.15
+## 8  0.1      1.00             0.80 22965.59
+## 9  0.1      0.80             0.65 23213.12
+## 10 0.1      0.65             0.50 23258.04
+## 11 0.1      0.50             0.50 23278.92
+## 12 0.1      1.00             0.65 23312.92
+## 13 0.1      0.50             0.80 23482.31
+## 14 0.1      0.50             0.65 23918.63
+## 15 0.1      0.80             0.50 24105.32
+## 16 0.1      1.00             0.50 24110.25
+```
+
+]
+]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+.scrollable90[
+.pull-left.font110[
+&lt;br&gt;
+1. .opacity[Crank up the trees and tune learning rate with early stopping]
+2. .opacity[Tune tree-specific hyperparameters]
+3. .opacity[Add stochastic attributes with]
+4. See if adding regularization helps
+   - gamma: tested 0.001, 0.01, 0.1, 1, 100, 1000 -- no effect
+   - lambda: tested 0.001, 0.01, 0.1, 1, 100, 1000 -- no effect
+   - alpha: tested 0.001, 0.01, 0.1, 1, 100, 1000 -- minimal effect
+
+]
+
+.pull-right[
+
+
+```r
+hyper_grid &lt;- expand.grid(
+  eta = .1,
+  #gamma = c(1e-2, 0.1, 1, 100, 1000),
+  #lambda = c(1e-2, 0.1, 1, 100, 1000),
+* alpha = c(1e-2, 0.1, 1, 100, 1000),
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m &lt;- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+*   params = list(
+*     eta = hyper_grid$eta[i],
+*     #gamma = hyper_grid$gamma[i],
+*     #lambda = hyper_grid$lambda[i],
+      alpha = hyper_grid$alpha[i]
+*   )
+  )
+  hyper_grid$rmse[i] &lt;- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+##   eta alpha     rmse
+## 1 0.1 1e+02 22536.92
+## 2 0.1 1e-01 22567.20
+## 3 0.1 1e+00 22572.61
+## 4 0.1 1e-02 22572.94
+## 5 0.1 1e+03 22668.12
+```
+
+]]
+
+---
+# Tuning <span>&lt;i class="fas  fa-cog faa-spin animated faa-slow " style=" color:red;"&gt;&lt;/i&gt;</span>
+
+&lt;br&gt;
+.pull-left.font110[
+1. .opacity[Crank up the trees and tune learning rate with early stopping]
+2. .opacity[Tune tree-specific hyperparameters]
+3. .opacity[Add stochastic attributes with]
+4. .opacity[See if adding regularization helps]
+5. Rerun final "optimal" model
+
+]
+
+---
+class: center, middle, inverse
+
+.font300.white[Feature Interpretation]
+
+---
+# Feature Importance
+
+
+---
+# Feature Effects
 
 
 ---
@@ -879,13 +1315,28 @@ class: center, middle, inverse
 ]
 
 ---
+
+# Other Great Resources
+
+&lt;br&gt;
+.font120[
+
+* [How to explain gradient boosting](https://explained.ai/gradient-boosting/)
+
+* [A Gentle Introduction to the Gradient Boosting Algorithm for Machine Learning](https://machinelearningmastery.com/gentle-introduction-gradient-boosting-algorithm-machine-learning/)
+
+* [Complete Guide to Parameter Tuning in Gradient Boosting (GBM)](https://www.analyticsvidhya.com/blog/2016/02/complete-guide-parameter-tuning-gradient-boosting-gbm-python/)
+
+* [Complete Guide to Parameter Tuning in XGBoost](https://www.analyticsvidhya.com/blog/2016/03/complete-guide-parameter-tuning-xgboost-with-codes-python/)
+
+]
+
+
+---
 class: clear, center, middle
 
-background-image: url(images/raising-hand.gif)
-background-size: cover
-
-&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
-.font300.bold[<span class=" faa-pulse animated " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">Questions?</span>]
+background-image: url(http://www.ibnjuferi.us/wp-content/uploads/ask_google.gif)
+background-size: contain
 
 ---
 # Back home
