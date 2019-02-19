@@ -65,37 +65,17 @@ background-size: cover
 ---
 # Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
 
+.scrollable90[
 .pull-left[
 
 .center.bold.font120[Packages]
 
 
 ```r
+library(recipes)
 library(h2o)
 h2o.init(max_mem_size = "5g")
-##  Connection successful!
-## 
-## R is connected to the H2O cluster: 
-##     H2O cluster uptime:         43 minutes 21 seconds 
-##     H2O cluster timezone:       America/New_York 
-##     H2O data parsing timezone:  UTC 
-##     H2O cluster version:        3.22.1.1 
-##     H2O cluster version age:    1 month and 21 days  
-##     H2O cluster name:           H2O_started_from_R_b294776_fyi592 
-##     H2O cluster total nodes:    1 
-##     H2O cluster total memory:   4.99 GB 
-##     H2O cluster total cores:    8 
-##     H2O cluster allowed cores:  8 
-##     H2O cluster healthy:        TRUE 
-##     H2O Connection ip:          localhost 
-##     H2O Connection port:        54321 
-##     H2O Connection proxy:       NA 
-##     H2O Internal Security:      FALSE 
-##     H2O API Extensions:         XGBoost, Algos, AutoML, Core V3, Core V4 
-##     R Version:                  R version 3.5.2 (2018-12-20)
 ```
-
-
 
 
 
@@ -113,10 +93,27 @@ ames &lt;- AmesHousing::make_ames()
 # split data
 set.seed(123)
 split &lt;- rsample::initial_split(ames, strata = "Sale_Price")
-ames_train &lt;- rsample::training(split) %&gt;%
-  as.h2o()
-```
+ames_train &lt;- rsample::training(split)
+ames_test &lt;- rsample::testing(split)
 
+# make sure we have consistent categorical levels
+blueprint &lt;- recipe(Sale_Price ~ ., data = ames_train) %&gt;%
+  step_other(all_nominal(), threshold = .005)
+
+# create training &amp; test sets
+train_h2o &lt;- prep(blueprint, training = ames_train, retain = TRUE) %&gt;%
+  juice() %&gt;%
+  as.h2o()
+
+test_h2o &lt;- prep(blueprint, training = ames_train) %&gt;%
+  bake(new_data = ames_test) %&gt;%
+  as.h2o()
+
+# get names of response and features
+Y &lt;- "Sale_Price"
+X &lt;- setdiff(names(ames_train), Y)
+```
+]
 ]
 
 ---
@@ -159,7 +156,7 @@ Part 2: Train the ensemble
 - Perform k-fold cross-validation on each of these learners and collect the cross-validated predicted values from each of the _L_ algorithms (must use the same k-folds for each base learner). These predicted values represent  `\(p_1,…,p_L\)`.
 - The _N_ cross-validated predicted values from each of the _L_ algorithms can be combined to form a new `\(N \times L\)` matrix (represented by _Z_). This matrix, along with the original response vector (_y_), is called the “level-one” data. (N = number of rows in the training set.)
 
-&lt;img src="images/stacking-equation.png" width="495" style="display: block; margin: auto;" /&gt;
+
 
 - Train the metalearning algorithm on the level-one data ( `\(y=f(Z)\)` ). The “ensemble model” consists of the __L__ base learning models and the metalearning model, which can then be used to generate predictions on a test set.
 
@@ -177,7 +174,7 @@ Part 3: Predict on new data
 &lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
 --
 
-.center.bold.font90[_Stacking never does worse than selecting the single best base learner on the training data. .blue[The biggest gains are usually produced when stacking base learners that have high variability, and uncorrelated, predicted values.] The more similar the predicted values, the less advantage there is in stacking._]
+.center.bold.font90[_Stacking rarely does worse than selecting the single best base learner on the training data. .blue[The biggest gains are usually produced when stacking base learners that have high variability, and uncorrelated, predicted values.] The more similar the predicted values, the less advantage there is in stacking._]
 
 ---
 # Package implementation 📦
@@ -195,8 +192,233 @@ Part 3: Predict on new data
 ---
 class: clear, center, middle, inverse
 
-.font300.white[Stacking Existing Models]
+.font300.white[Stacking Existing Models]  
+.white[_Train first, stack later_]
 
+---
+# Stacking existing models
+
+.pull-left.font90[
+Say we found the optimal hyperparameters that provided the best predictive accuracy for a:
+
+1. Regularized regression base learner
+2. Random forest base learner
+3. Stochastic GBM base learner
+4. XGBoost base learner
+
+To stack them later we need to do a few specific things:
+
+1. All models must be trained on the same training set.
+2. All models must be trained with the same number of CV folds.
+3. All models must use the same fold assignment to ensure the same observations are used (`fold_assignment = "Modulo"`).
+4. The cross-validated predictions from all of the models must be preserved (`keep_cross_validation_predictions = True`).
+
+]
+
+---
+# Stacking existing models
+
+.scrollable90[
+.pull-left.font90[
+Say we found the optimal hyperparameters that provided the best predictive accuracy for a:
+
+1. Regularized regression base learner
+2. Random forest base learner
+3. Stochastic GBM base learner
+4. XGBoost base learner
+
+To stack them later we need to do a few specific things:
+
+1. All models must be trained on the same training set.
+2. All models must be trained with the same number of CV folds.
+3. All models must use the same fold assignment to ensure the same observations are used (`fold_assignment = "Modulo"`).
+4. The cross-validated predictions from all of the models must be preserved (`keep_cross_validation_predictions = True`).
+
+]
+
+.pull-right[
+
+.center.bold.font90[<span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>  This code takes ~12 min <span>&lt;i class="fas  fa-exclamation-triangle faa-FALSE animated " style=" color:red;"&gt;&lt;/i&gt;</span>]
+
+
+```r
+# Train &amp; Cross-validate a GLM model
+best_glm &lt;- h2o.glm(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  alpha = .1,
+  remove_collinear_columns = TRUE,
+* nfolds = 10,
+* fold_assignment = "Modulo",
+* keep_cross_validation_predictions = TRUE,
+  seed = 123
+  )
+
+h2o.rmse(best_glm, xval = TRUE)
+## [1] 35638.96
+
+# Train &amp; Cross-validate a RF model
+best_rf &lt;- h2o.randomForest(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 1000,
+  mtries = 20,
+  max_depth = 30,
+  min_rows = 1,
+  sample_rate = 0.8,
+* nfolds = 10,
+* fold_assignment = "Modulo",
+* keep_cross_validation_predictions = TRUE,
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+  )
+
+h2o.rmse(best_rf, xval = TRUE)
+## [1] 24103.8
+
+# Train &amp; Cross-validate a GBM model
+best_gbm &lt;- h2o.gbm(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 5000,
+  learn_rate = 0.01,
+  max_depth = 7,
+  min_rows = 5,
+  sample_rate = 0.8,
+* nfolds = 10,
+* fold_assignment = "Modulo",
+* keep_cross_validation_predictions = TRUE,
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+  )
+
+h2o.rmse(best_gbm, xval = TRUE)
+## [1] 21747.52
+
+# Train &amp; Cross-validate an XGBoost model
+best_xgb &lt;- h2o.xgboost(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 5000,
+  learn_rate = 0.05,
+  max_depth = 3,
+  min_rows = 3,
+  sample_rate = 0.8,
+  categorical_encoding = "Enum",
+* nfolds = 10,
+* fold_assignment = "Modulo",
+* keep_cross_validation_predictions = TRUE,
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+)
+
+h2o.rmse(best_xgb, xval = TRUE)
+## [1] 20936.64
+```
+]
+]
+
+---
+# Stacking existing models
+
+.pull-left[
+
+* use `h2o.stackedEnsemble()` to stack these models
+
+* we can use many different metalearning algorithms ("superlearners")
+   - `glm`: regularized linear regression
+   - `drf`: random forest
+   - `gbm`: gradient boosted machine
+   - `deeplearning`: neural network
+
+]
+
+.pull-right[
+
+
+```r
+# Train a stacked tree ensemble
+ensemble_tree &lt;- h2o.stackedEnsemble(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  model_id = "my_tree_ensemble",
+  base_models = list(best_glm, best_rf, best_gbm, best_xgb),
+* metalearner_algorithm = "drf"
+  )
+```
+
+]
+
+---
+# Stacking existing models
+
+.scrollable90[
+.pull-left[
+
+* use `h2o.stackedEnsemble()` to stack these models
+
+* we can use many different metalearning algorithms ("superlearners")
+   - `glm`: regularized linear regression
+   - `drf`: random forest
+   - `gbm`: gradient boosted machine
+   - `deeplearning`: neural network
+   
+* results illustrate a slight improvement
+
+* we're restricted on how much improvement stacking will make due to highly correlated predictions
+
+
+]
+
+.pull-right[
+
+
+```r
+# base learners
+get_rmse &lt;- function(model) {
+  results &lt;- h2o.performance(model, newdata = test_h2o)
+  results@metrics$RMSE
+}
+
+list(best_glm, best_rf, best_gbm, best_xgb) %&gt;%
+  purrr::map_dbl(get_rmse)
+## [1] 30024.67 23075.24 20859.92 21391.20
+
+# stacked glm
+results_tree &lt;- h2o.performance(ensemble_tree, newdata = test_h2o)
+results_tree@metrics$RMSE
+## [1] 20664.56
+```
+
+
+```r
+data.frame(
+  GLM_pred = as.vector(h2o.getFrame(best_glm@model$cross_validation_holdout_predictions_frame_id$name)),
+  RF_pred = as.vector(h2o.getFrame(best_rf@model$cross_validation_holdout_predictions_frame_id$name)),
+  GBM_pred = as.vector(h2o.getFrame(best_gbm@model$cross_validation_holdout_predictions_frame_id$name)),
+  XGB_pred = as.vector(h2o.getFrame(best_xgb@model$cross_validation_holdout_predictions_frame_id$name))
+  ) %&gt;%
+  cor()
+##           GLM_pred   RF_pred  GBM_pred  XGB_pred
+## GLM_pred 1.0000000 0.9390229 0.9291982 0.9345048
+## RF_pred  0.9390229 1.0000000 0.9920349 0.9821944
+## GBM_pred 0.9291982 0.9920349 1.0000000 0.9854160
+## XGB_pred 0.9345048 0.9821944 0.9854160 1.0000000
+```
+
+]
+]
 
 ---
 class: clear, center, middle, inverse

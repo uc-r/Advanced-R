@@ -27,7 +27,8 @@ knitr::opts_chunk$set(
   error = FALSE,
   message = FALSE, 
   warning = FALSE, 
-  collapse = TRUE 
+  collapse = TRUE,
+  eval = FALSE
 )
 
 library(tidyverse)
@@ -83,11 +84,13 @@ background-size: cover
 ---
 # Prereqs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
+.scrollable90[
 .pull-left[
 
 .center.bold.font120[Packages]
 
 ```{r prereqs-pks}
+library(recipes)
 library(h2o)
 h2o.init(max_mem_size = "5g")
 ```
@@ -95,8 +98,6 @@ h2o.init(max_mem_size = "5g")
 ```{r no-progress, echo=FALSE}
 h2o.no_progress()
 ```
-
-
 
 ]
 
@@ -111,10 +112,27 @@ ames <- AmesHousing::make_ames()
 # split data
 set.seed(123)
 split <- rsample::initial_split(ames, strata = "Sale_Price")
-ames_train <- rsample::training(split) %>%
-  as.h2o()
-```
+ames_train <- rsample::training(split)
+ames_test <- rsample::testing(split)
 
+# make sure we have consistent categorical levels
+blueprint <- recipe(Sale_Price ~ ., data = ames_train) %>%
+  step_other(all_nominal(), threshold = .005)
+
+# create training & test sets
+train_h2o <- prep(blueprint, training = ames_train, retain = TRUE) %>%
+  juice() %>%
+  as.h2o()
+
+test_h2o <- prep(blueprint, training = ames_train) %>%
+  bake(new_data = ames_test) %>%
+  as.h2o()
+
+# get names of response and features
+Y <- "Sale_Price"
+X <- setdiff(names(ames_train), Y)
+```
+]
 ]
 
 ---
@@ -177,7 +195,7 @@ Part 3: Predict on new data
 <br><br><br><br>
 --
 
-.center.bold.font90[_Stacking never does worse than selecting the single best base learner on the training data. .blue[The biggest gains are usually produced when stacking base learners that have high variability, and uncorrelated, predicted values.] The more similar the predicted values, the less advantage there is in stacking._]
+.center.bold.font90[_Stacking rarely does worse than selecting the single best base learner on the training data. .blue[The biggest gains are usually produced when stacking base learners that have high variability, and uncorrelated, predicted values.] The more similar the predicted values, the less advantage there is in stacking._]
 
 ---
 # Package implementation `r emo::ji("package")`
@@ -195,8 +213,229 @@ Part 3: Predict on new data
 ---
 class: clear, center, middle, inverse
 
-.font300.white[Stacking Existing Models]
+.font300.white[Stacking Existing Models]  
+.white[_Train first, stack later_]
 
+---
+# Stacking existing models
+
+.pull-left.font90[
+Say we found the optimal hyperparameters that provided the best predictive accuracy for a:
+
+1. Regularized regression base learner
+2. Random forest base learner
+3. Stochastic GBM base learner
+4. XGBoost base learner
+
+To stack them later we need to do a few specific things:
+
+1. All models must be trained on the same training set.
+2. All models must be trained with the same number of CV folds.
+3. All models must use the same fold assignment to ensure the same observations are used (`fold_assignment = "Modulo"`).
+4. The cross-validated predictions from all of the models must be preserved (`keep_cross_validation_predictions = True`).
+
+]
+
+---
+# Stacking existing models
+
+.scrollable90[
+.pull-left.font90[
+Say we found the optimal hyperparameters that provided the best predictive accuracy for a:
+
+1. Regularized regression base learner
+2. Random forest base learner
+3. Stochastic GBM base learner
+4. XGBoost base learner
+
+To stack them later we need to do a few specific things:
+
+1. All models must be trained on the same training set.
+2. All models must be trained with the same number of CV folds.
+3. All models must use the same fold assignment to ensure the same observations are used (`fold_assignment = "Modulo"`).
+4. The cross-validated predictions from all of the models must be preserved (`keep_cross_validation_predictions = True`).
+
+]
+
+.pull-right[
+
+.center.bold.font90[`r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`  This code takes ~12 min `r anicon::faa("exclamation-triangle", color = "red", animate = FALSE)`]
+
+```{r existing-models, eval=FALSE}
+# Train & Cross-validate a GLM model
+best_glm <- h2o.glm(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  alpha = .1,
+  remove_collinear_columns = TRUE,
+  nfolds = 10, #<<
+  fold_assignment = "Modulo", #<<
+  keep_cross_validation_predictions = TRUE, #<<
+  seed = 123
+  )
+
+h2o.rmse(best_glm, xval = TRUE)
+## [1] 35638.96
+
+# Train & Cross-validate a RF model
+best_rf <- h2o.randomForest(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 1000,
+  mtries = 20,
+  max_depth = 30,
+  min_rows = 1,
+  sample_rate = 0.8,
+  nfolds = 10, #<<
+  fold_assignment = "Modulo", #<<
+  keep_cross_validation_predictions = TRUE, #<<
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+  )
+
+h2o.rmse(best_rf, xval = TRUE)
+## [1] 24103.8
+
+# Train & Cross-validate a GBM model
+best_gbm <- h2o.gbm(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 5000,
+  learn_rate = 0.01,
+  max_depth = 7,
+  min_rows = 5,
+  sample_rate = 0.8,
+  nfolds = 10, #<<
+  fold_assignment = "Modulo", #<<
+  keep_cross_validation_predictions = TRUE, #<<
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+  )
+
+h2o.rmse(best_gbm, xval = TRUE)
+## [1] 21747.52
+
+# Train & Cross-validate an XGBoost model
+best_xgb <- h2o.xgboost(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  ntrees = 5000,
+  learn_rate = 0.05,
+  max_depth = 3,
+  min_rows = 3,
+  sample_rate = 0.8,
+  categorical_encoding = "Enum",
+  nfolds = 10, #<<
+  fold_assignment = "Modulo", #<<
+  keep_cross_validation_predictions = TRUE, #<<
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
+)
+
+h2o.rmse(best_xgb, xval = TRUE)
+## [1] 20936.64
+```
+]
+]
+
+---
+# Stacking existing models
+
+.pull-left[
+
+* use `h2o.stackedEnsemble()` to stack these models
+
+* we can use many different metalearning algorithms ("superlearners")
+   - `glm`: regularized linear regression
+   - `drf`: random forest
+   - `gbm`: gradient boosted machine
+   - `deeplearning`: neural network
+
+]
+
+.pull-right[
+
+```{r stacking-existing-mods, eval=FALSE}
+# Train a stacked tree ensemble
+ensemble_tree <- h2o.stackedEnsemble(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  model_id = "my_tree_ensemble",
+  base_models = list(best_glm, best_rf, best_gbm, best_xgb),
+  metalearner_algorithm = "drf" #<<
+  )
+```
+
+]
+
+---
+# Stacking existing models
+
+.scrollable90[
+.pull-left[
+
+* use `h2o.stackedEnsemble()` to stack these models
+
+* we can use many different metalearning algorithms ("superlearners")
+   - `glm`: regularized linear regression
+   - `drf`: random forest
+   - `gbm`: gradient boosted machine
+   - `deeplearning`: neural network
+   
+* results illustrate a slight improvement
+
+* we're restricted on how much improvement stacking will make due to highly correlated predictions
+
+
+]
+
+.pull-right[
+
+```{r stacking-existing-mods-results, eval=FALSE}
+# base learners
+get_rmse <- function(model) {
+  results <- h2o.performance(model, newdata = test_h2o)
+  results@metrics$RMSE
+}
+
+list(best_glm, best_rf, best_gbm, best_xgb) %>%
+  purrr::map_dbl(get_rmse)
+## [1] 30024.67 23075.24 20859.92 21391.20
+
+# stacked glm
+results_tree <- h2o.performance(ensemble_tree, newdata = test_h2o)
+results_tree@metrics$RMSE
+## [1] 20664.56
+```
+
+```{r prediction-correlation, eval=FALSE}
+data.frame(
+  GLM_pred = as.vector(h2o.getFrame(best_glm@model$cross_validation_holdout_predictions_frame_id$name)),
+  RF_pred = as.vector(h2o.getFrame(best_rf@model$cross_validation_holdout_predictions_frame_id$name)),
+  GBM_pred = as.vector(h2o.getFrame(best_gbm@model$cross_validation_holdout_predictions_frame_id$name)),
+  XGB_pred = as.vector(h2o.getFrame(best_xgb@model$cross_validation_holdout_predictions_frame_id$name))
+  ) %>%
+  cor()
+##           GLM_pred   RF_pred  GBM_pred  XGB_pred
+## GLM_pred 1.0000000 0.9390229 0.9291982 0.9345048
+## RF_pred  0.9390229 1.0000000 0.9920349 0.9821944
+## GBM_pred 0.9291982 0.9920349 1.0000000 0.9854160
+## XGB_pred 0.9345048 0.9821944 0.9854160 1.0000000
+```
+
+]
+]
 
 ---
 class: clear, center, middle, inverse
