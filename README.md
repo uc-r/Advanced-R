@@ -30,15 +30,15 @@ the material covered in this training:
 **Day
 2**
 
-| Topic                                                                                                |     Time      |
-| :--------------------------------------------------------------------------------------------------- | :-----------: |
-| Breakfast / Social time                                                                              |  8:00 - 9:00  |
-| [Decision trees, bagging, & random forests](https://uc-r.github.io/Advanced-R/06-random-forest.html) | 9:00 - 11:00  |
-| [Gradient boosting machines](https://uc-r.github.io/Advanced-R/07-gbms.html)                         | 11:00 - 12:00 |
-| Lunch                                                                                                | 12:00 - 1:00  |
-| [Stacked models & auto ML](https://uc-r.github.io/Advanced-R/08-stacking.html)                       |  1:00 - 2:00  |
-| Interpretable machine learning                                                                       |  2:15 - 3:45  |
-| Q\&A                                                                                                 |  4:00 - 4:30  |
+| Topic                                                                                                       |     Time      |
+| :---------------------------------------------------------------------------------------------------------- | :-----------: |
+| Breakfast / Social time                                                                                     |  8:00 - 9:00  |
+| [Decision trees, bagging, & random forests](https://uc-r.github.io/Advanced-R/06-random-forest.html)        | 9:00 - 11:00  |
+| [Gradient boosting machines](https://uc-r.github.io/Advanced-R/07-gbms.html)                                | 11:00 - 12:00 |
+| Lunch                                                                                                       | 12:00 - 1:00  |
+| [Stacked models & auto ML](https://uc-r.github.io/Advanced-R/08-stacking.html)                              |  1:00 - 2:00  |
+| [Interpretable machine learning](https://bradleyboehmke.github.io/CinDay-RUG-IML-2018/slides-source.html#1) |  2:15 - 3:45  |
+| Q\&A                                                                                                        |  4:00 - 4:30  |
 
 ***Schedule is still being refined and is subject to change; however,
 the topics should remain the same.***
