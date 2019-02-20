@@ -442,15 +442,232 @@ class: clear, center, middle, inverse
 
 .font300.white[Stacking a Grid Search]
 
+---
+# Stacking a grid search
+
+.scrollable90[
+.pull-left[
+* We can also stack multiple models generated from the same base learner
+
+* Certain tuning parameters allow us to find unique patterns within the data
+
+* By stacking the results of a grid search, we can capitalize on the benefits of each of the models in our grid search to create a meta model
+
+* For example, the following performs a random grid search across a wide range of hyperparameter settings. We set the search to stop after 25 models have run.
+]
+
+.pull-right[
+
+```{r gbm-grid-search, eval=FALSE}
+# GBM hyperparameters
+hyper_grid <- list(
+  max_depth = c(1, 3, 5),
+  min_rows = c(1, 5, 10),
+  learn_rate = c(0.01, 0.05, 0.1),
+  learn_rate_annealing = c(.99, 1),
+  sample_rate = c(.5, .75, 1),
+  col_sample_rate = c(.8, .9, 1)
+)
+
+# random grid search criteria
+search_criteria <- list(
+  strategy = "RandomDiscrete",
+  max_models = 25
+  )
+
+# build random grid search 
+random_grid <- h2o.grid(
+  algorithm = "gbm",
+  grid_id = "gbm_grid",
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  hyper_params = hyper_grid,
+  search_criteria = search_criteria,
+  ntrees = 5000,
+  stopping_metric = "RMSE",     
+  stopping_rounds = 10,         
+  stopping_tolerance = 0,
+  nfolds = 10,
+  fold_assignment = "Modulo",
+  keep_cross_validation_predictions = TRUE,
+  seed = 123
+  )
+```
+
+]]
+
+---
+# Stacking a grid search
+
+If we look at the grid search models we see that the cross-validated RMSE range from 20756-57826
+.scrollable90[
+```{r gbm-grid-results, eval=FALSE}
+# collect the results and sort by our model performance metric of choice
+random_grid_perf <- h2o.getGrid(
+  grid_id = "gbm_grid", 
+  sort_by = "rmse"
+  )
+random_grid_perf
+## H2O Grid Details
+## ================
+## 
+## Grid ID: gbm_grid 
+## Used hyper parameters: 
+##   -  col_sample_rate 
+##   -  learn_rate 
+##   -  learn_rate_annealing 
+##   -  max_depth 
+##   -  min_rows 
+##   -  sample_rate 
+## Number of models: 25 
+## Number of failed models: 0 
+## 
+## Hyper-Parameter Search Summary: ordered by increasing rmse
+##   col_sample_rate learn_rate learn_rate_annealing max_depth min_rows sample_rate         model_ids               rmse
+## 1             0.9       0.01                  1.0         3      1.0         1.0 gbm_grid_model_20  20756.16775065606
+## 2             0.9       0.01                  1.0         5      1.0        0.75  gbm_grid_model_2 21188.696088824694
+## 3             0.9        0.1                  1.0         3      1.0        0.75  gbm_grid_model_5 21203.753908665003
+## 4             0.8       0.01                  1.0         5      5.0         1.0 gbm_grid_model_16 21704.257699437963
+## 5             1.0        0.1                 0.99         3      1.0         1.0 gbm_grid_model_17 21710.275753497197
+## 
+## ---
+##    col_sample_rate learn_rate learn_rate_annealing max_depth min_rows sample_rate         model_ids               rmse
+## 20             1.0       0.01                  1.0         1     10.0        0.75 gbm_grid_model_11 26164.879525289896
+## 21             0.8       0.01                 0.99         3      1.0        0.75 gbm_grid_model_15  44805.63843296435
+## 22             1.0       0.01                 0.99         3     10.0         1.0 gbm_grid_model_18 44854.611500840605
+## 23             0.8       0.01                 0.99         1     10.0         1.0 gbm_grid_model_21 57797.874642563846
+## 24             0.9       0.01                 0.99         1     10.0        0.75 gbm_grid_model_10  57809.60302408739
+## 25             0.8       0.01                 0.99         1      5.0        0.75  gbm_grid_model_4  57826.30370545089
+```
+]
+
+---
+# Stacking a grid search
+
+.scrollable90[
+.pull-left[
+
+Single best model applied to our test set
+
+```{r gbm-grid-single-best, eval=FALSE}
+# Grab the model_id for the top model, chosen by validation error
+best_model_id <- random_grid_perf@model_ids[[1]]
+best_model <- h2o.getModel(best_model_id)
+h2o.performance(best_model, newdata = test_h2o)
+## H2ORegressionMetrics: gbm
+## 
+## MSE:  466551295
+## RMSE:  21599.8 #<<
+## MAE:  13697.78
+## RMSLE:  0.1090604
+## Mean Residual Deviance :  466551295
+```
+
+]
+
+.pull-right[
+
+Meta learner of our grid search applied to our test set
+
+```{r gbm-grid-super-learner, eval=FALSE}
+# Train a stacked ensemble using the GBM grid
+ensemble <- h2o.stackedEnsemble(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  model_id = "ensemble_gbm_grid",
+  base_models = random_grid@model_ids,
+  metalearner_algorithm = "gbm"
+  )
+
+# Eval ensemble performance on a test set
+h2o.performance(ensemble, newdata = test_h2o)
+## H2ORegressionMetrics: stackedensemble
+## 
+## MSE:  469579433
+## RMSE:  21669.78 #<<
+## MAE:  13499.93
+## RMSLE:  0.1061244
+## Mean Residual Deviance :  469579433
+```
+
+]]
+
+.center.bold.blue[We see little benefit here; likely because our predictions are highly correlated.]
 
 ---
 class: clear, center, middle, inverse
 
 .font300.white[Auto ML Search]
 
+---
+# Auto ML search
 
+.pull-left[
 
+* Perform an automated search across
+   - multiple base learners
+   - multiple hyperparameter settings
 
+* Frees your time
+
+* Multiple players
+   - DataRobot, a current leader in AutoML (R and Python interfaces are available).
+   - H2O Driverless AI, another leader in AutoML (R and Python interfaces available).
+   - auto-sklearn, an automated machine learning toolkit and a drop-in replacement for scikit-learn estimator’s (Python).
+
+]
+
+.pull-right[
+
+```{r autoML-cartoon, eval=TRUE, echo=FALSE}
+knitr::include_graphics("images/autoML-cartoon.png")
+```
+
+]
+
+---
+# Auto ML search
+
+.scrollable90[
+.pull-left[
+* `h2o.automl()` performs automated grid search and cross validation on
+   - GLMs
+   - RF
+   - GBM
+   - XGBoost
+   - Deep Learning
+   - Stacked results
+   
+* Default will search for 1 hour but you can adjust search to run for specified:
+   - time
+   - number of models
+   - and control individual model stopping tolerance
+   
+]
+
+.pull-right[
+
+```{r autoML-search, eval=FALSE}
+auto_ml <- h2o.automl(
+  x = X,
+  y = Y,
+  training_frame = train_h2o,
+  nfolds = 5,
+  max_runtime_secs = 60*60,
+  max_models = 50,
+  keep_cross_validation_predictions = TRUE,
+  sort_metric = "RMSE",
+  seed = 123
+)
+
+# assess the leader board
+# get top model: auto_ml@leader
+auto_ml@leaderboard
+```
+
+]]
 
 
 
