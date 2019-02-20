@@ -630,6 +630,11 @@ class: clear, center, middle, inverse
    - number of models
    - and control individual model stopping tolerance
    
+* This Auto ML search:
+   - assessed 80 models in 2 hours
+   - good results but not as good as our previous models
+   - use auto ML to point in good directions but don't rely on it as crème de la crème
+   
 ]
 
 .pull-right[
@@ -641,19 +646,141 @@ auto_ml &lt;- h2o.automl(
   y = Y,
   training_frame = train_h2o,
   nfolds = 5,
-  max_runtime_secs = 60*60,
+  max_runtime_secs = 60*120, # 2 hours!
   max_models = 50,
   keep_cross_validation_predictions = TRUE,
   sort_metric = "RMSE",
-  seed = 123
+  seed = 123,
+  stopping_rounds = 50,
+  stopping_metric = "RMSE",
+  stopping_tolerance = 0
 )
 
 # assess the leader board
 # get top model: auto_ml@leader
-auto_ml@leaderboard
+auto_ml@leaderboard %&gt;% as.data.frame()
+##                                               model_id mean_residual_deviance      rmse         mse      mae     rmsle
+## 1                     XGBoost_1_AutoML_20190220_084553              494171636  22229.97   494171636 13822.87 0.1278834
+## 2            GBM_grid_1_AutoML_20190220_084553_model_1              503430766  22437.26   503430766 13767.88 0.1253053
+## 3            GBM_grid_1_AutoML_20190220_084553_model_3              518817574  22777.57   518817574 13858.60 0.1290617
+## 4                         GBM_2_AutoML_20190220_084553              519183630  22785.60   519183630 14224.31 0.1280925
+## 5                         GBM_3_AutoML_20190220_084553              535163213  23133.59   535163213 14220.94 0.1291349
+## 6                         GBM_4_AutoML_20190220_084553              537565303  23185.45   537565303 14217.37 0.1288148
+## 7                     XGBoost_2_AutoML_20190220_084553              538225152  23199.68   538225152 14219.07 0.1309783
+## 8                     XGBoost_1_AutoML_20190220_075753              539692588  23231.28   539692588 14579.98 0.1336797
+## 9                         GBM_1_AutoML_20190220_084553              544128711  23326.57   544128711 14261.71 0.1303192
+## 10           GBM_grid_1_AutoML_20190220_075753_model_2              544308592  23330.42   544308592 14096.86 0.1285264
+## 11                    XGBoost_3_AutoML_20190220_084553              551086335  23475.23   551086335 14281.41 0.1329799
+## 12       XGBoost_grid_1_AutoML_20190220_084553_model_3              554604150  23550.04   554604150 14450.80 0.1323416
+## 13      XGBoost_grid_1_AutoML_20190220_075753_model_15              558894714  23640.95   558894714 14623.96 0.1371709
+## 14       XGBoost_grid_1_AutoML_20190220_084553_model_8              559164350  23646.66   559164350 14471.03 0.1352374
+## 15       XGBoost_grid_1_AutoML_20190220_084553_model_6              560854881  23682.37   560854881 14659.27 0.1389242
+## 16      XGBoost_grid_1_AutoML_20190220_084553_model_12              561541549  23696.87   561541549 14517.76 0.1319543
+## 17                        GBM_1_AutoML_20190220_075753              564388242  23756.86   564388242 14553.10 0.1325419
+## 18       XGBoost_grid_1_AutoML_20190220_084553_model_7              566710386  23805.68   566710386 14221.74 0.1317049
+## 19       XGBoost_grid_1_AutoML_20190220_075753_model_6              569618396  23866.68   569618396 14791.46 0.1396311
+## 20           GBM_grid_1_AutoML_20190220_084553_model_2              573869609  23955.58   573869609 13675.43 0.1259909
+## 21                        GBM_2_AutoML_20190220_075753              575416124  23987.83   575416124 14514.53 0.1309590
+## 22       XGBoost_grid_1_AutoML_20190220_075753_model_8              590222063  24294.49   590222063 14677.83 0.1371388
+## 23                        GBM_3_AutoML_20190220_075753              591347916  24317.65   591347916 14548.26 0.1317904
+## 24                        GBM_5_AutoML_20190220_084553              592751585  24346.49   592751585 15167.43 0.1354277
+## 25       XGBoost_grid_1_AutoML_20190220_084553_model_9              593645832  24364.85   593645832 14409.93 0.1347822
+## 26                        GBM_4_AutoML_20190220_075753              593842616  24368.89   593842616 14539.17 0.1312543
+## 27      XGBoost_grid_1_AutoML_20190220_075753_model_14              595847877  24410.00   595847877 15102.16 0.1412699
+## 28                    XGBoost_2_AutoML_20190220_075753              597183621  24437.34   597183621 14774.69 0.1350752
+## 29                    XGBoost_3_AutoML_20190220_075753              618364439  24866.93   618364439 14627.21 0.1362630
+## 30      XGBoost_grid_1_AutoML_20190220_075753_model_12              618668364  24873.04   618668364 14962.68 0.1343198
+## 31       XGBoost_grid_1_AutoML_20190220_075753_model_7              623752476  24975.04   623752476 15002.37 0.1376980
+## 32      XGBoost_grid_1_AutoML_20190220_075753_model_13              625612063  25012.24   625612063 15250.60 0.1410862
+## 33       XGBoost_grid_1_AutoML_20190220_075753_model_2              631028689  25120.28   631028689 15311.83 0.1373562
+## 34       XGBoost_grid_1_AutoML_20190220_075753_model_9              639355245  25285.47   639355245 14589.69 0.1368971
+## 35       XGBoost_grid_1_AutoML_20190220_084553_model_4              644708584  25391.11   644708584 15545.27 0.1455432
+## 36                        DRF_1_AutoML_20190220_084553              651375000  25522.05   651375000 15286.66 0.1413668
+## 37  DeepLearning_grid_1_AutoML_20190220_084553_model_1              652899521  25551.90   652899521 14924.34 0.1686744
+## 38       XGBoost_grid_1_AutoML_20190220_084553_model_1              666911878  25824.64   666911878 15785.05 0.1448420
+## 39      XGBoost_grid_1_AutoML_20190220_084553_model_11              669644295  25877.49   669644295 15973.13 0.1460775
+## 40       XGBoost_grid_1_AutoML_20190220_075753_model_5              670032753  25884.99   670032753 15827.29 0.1444645
+## 41       XGBoost_grid_1_AutoML_20190220_084553_model_5              673877787  25959.16   673877787 15890.51 0.1442607
+## 42      XGBoost_grid_1_AutoML_20190220_075753_model_11              674002846  25961.56   674002846 15994.60 0.1459860
+## 43       XGBoost_grid_1_AutoML_20190220_075753_model_1              679742125  26071.86   679742125 15878.26 0.1455838
+## 44  DeepLearning_grid_1_AutoML_20190220_075753_model_2              683895191  26151.39   683895191 15371.53 0.1378527
+## 45       XGBoost_grid_1_AutoML_20190220_084553_model_2              693546595  26335.27   693546595 16835.52 0.1434459
+## 46       XGBoost_grid_1_AutoML_20190220_075753_model_3              712715861  26696.74   712715861 15755.10 0.1408707
+## 47                        XRT_1_AutoML_20190220_084553              715885103  26756.03   715885103 16134.13 0.1506908
+## 48      XGBoost_grid_1_AutoML_20190220_075753_model_16              716643971  26770.21   716643971 15652.50 0.1360591
+## 49                        DRF_1_AutoML_20190220_075753              718590439  26806.54   718590439 16441.92 0.1470079
+## 50  DeepLearning_grid_1_AutoML_20190220_075753_model_3              720915166  26849.86   720915166 14959.75 0.1501482
+## 51  DeepLearning_grid_1_AutoML_20190220_075753_model_6              753480062  27449.59   753480062 15026.75 0.1344080
+## 52           GBM_grid_1_AutoML_20190220_075753_model_1              754219556  27463.06   754219556 18038.62 0.1519872
+## 53  DeepLearning_grid_1_AutoML_20190220_084553_model_2              755131890  27479.66   755131890 16007.82 0.1397099
+## 54           GBM_grid_1_AutoML_20190220_075753_model_7              764119160  27642.71   764119160 18469.07 0.1565801
+## 55                        GBM_5_AutoML_20190220_075753              774950440  27837.93   774950440 16288.80 0.1435441
+## 56  DeepLearning_grid_1_AutoML_20190220_075753_model_5              776388379  27863.75   776388379 15576.71 0.1358005
+## 57               DeepLearning_1_AutoML_20190220_084553              805890899  28388.22   805890899 15329.34 0.1428664
+## 58  DeepLearning_grid_1_AutoML_20190220_075753_model_1              813465684  28521.32   813465684 14933.25 0.1478771
+## 59           GBM_grid_1_AutoML_20190220_075753_model_4              843074198  29035.74   843074198 18032.57 0.1638802
+## 60      XGBoost_grid_1_AutoML_20190220_084553_model_10              858324912  29297.18   858324912 16341.85 0.1386949
+## 61                        XRT_1_AutoML_20190220_075753              873499767  29555.03   873499767 17548.96 0.1595296
+## 62               DeepLearning_1_AutoML_20190220_075753              874287980  29568.36   874287980 16888.83 0.1502274
+## 63           GBM_grid_1_AutoML_20190220_084553_model_4              957689400  30946.56   957689400 19817.20 0.1785158
+## 64  DeepLearning_grid_1_AutoML_20190220_075753_model_4             1080202776  32866.44  1080202776 19627.77 0.1761614
+## 65           GBM_grid_1_AutoML_20190220_084553_model_5             1154050429  33971.32  1154050429 22031.69 0.1813508
+## 66           GBM_grid_1_AutoML_20190220_075753_model_8             1189517985  34489.39  1189517985 23847.28        NA
+## 67  DeepLearning_grid_1_AutoML_20190220_084553_model_3             1338954960  36591.73  1338954960 26890.09 0.2390289
+## 68           GBM_grid_1_AutoML_20190220_075753_model_6             1344509600  36667.56  1344509600 26568.92 0.2250109
+## 69      XGBoost_grid_1_AutoML_20190220_084553_model_13             1633478745  40416.32  1633478745 30366.55 0.2074675
+## 70           GBM_grid_1_AutoML_20190220_075753_model_9             2279530122  47744.43  2279530122 34931.67        NA
+## 71    StackedEnsemble_AllModels_AutoML_20190220_084553             2485686253  49856.66  2485686253 35106.78 0.2722184
+## 72    StackedEnsemble_AllModels_AutoML_20190220_075753             3496013158  59127.09  3496013158 42268.32 0.3167804
+## 73 StackedEnsemble_BestOfFamily_AutoML_20190220_084553             5885176593  76714.90  5885176593 55812.19 0.4030877
+## 74 StackedEnsemble_BestOfFamily_AutoML_20190220_075753             5890317586  76748.40  5890317586 55813.43 0.4032120
+## 75           GBM_grid_1_AutoML_20190220_075753_model_5             6156796280  78465.26  6156796280 57096.84 0.4119697
+## 76           GBM_grid_1_AutoML_20190220_075753_model_3             6167799467  78535.34  6167799467 57115.15 0.4121815
+## 77           GLM_grid_1_AutoML_20190220_075753_model_1             6445574649  80284.34  6445574649 58500.33 0.4212456
+## 78           GLM_grid_1_AutoML_20190220_084553_model_1             6445574649  80284.34  6445574649 58500.33 0.4212456
+## 79       XGBoost_grid_1_AutoML_20190220_075753_model_4             8567249418  92559.44  8567249418 48730.19 5.1997830
+## 80      XGBoost_grid_1_AutoML_20190220_075753_model_10            15721368661 125384.88 15721368661 81968.35 7.3465085
 ```
 
 ]]
+
+---
+# Summary
+
+&lt;br&gt;
+.pull-left[
+* Multiple approaches for model stacking
+  - Stacking existing models
+  - Stacking a grid search
+  
+* Multiple applications for model stacking
+  - H2O
+  - DataRobot
+  - auto-sklearn
+  
+* Auto ML frees up your time but .bold.blue[is not a panacea]! 
+]
+
+.pull-right[
+
+&lt;img src="images/automl-panacea.jpg" width="1707" style="display: block; margin: auto;" /&gt;
+
+
+]
+
+---
+class: clear, center, middle
+
+background-image: url(https://slideplayer.com/slide/8645270/26/images/8/Good+vrs.+Bad+No+question+is+a+bad+question.+Well%2C+for+teachers+this+is+not+the+case%21%21.jpg)
+background-size: contain
+
+---
+# Back home
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+[.center[<span>&lt;i class="fas  fa-home fa-10x faa-FALSE animated "&gt;&lt;/i&gt;</span>]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
     </textarea>
 <script src="libs/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
