@@ -93,7 +93,7 @@ knitr::include_graphics("images/modeling_process.png")
 ]
 
 ---
-# Prerequisites
+# Prerequisites .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
 .pull-left[
 
@@ -169,7 +169,7 @@ knitr::include_graphics("images/nope.png")
    - as $n \geq p$ (where *p* represents the number of features), larger samples sizes are often required to identify consistent signals in the features
 
 ---
-# Mechanics of data splitting
+# Mechanics of data splitting .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
 
 Two most common ways of splitting data include:
 
@@ -219,7 +219,7 @@ ggplot(train, aes(x = price)) +
   
 ---
 class: yourturn
-# Your Turn!
+# Your Turn! .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
 
 1. Use __rsample__ to split the Ames housing data (`ames`) and the Employee attrition data (`churn`) using stratified sampling and with a 80% split.
 
@@ -970,7 +970,7 @@ Let's put these pieces together and analyze the Ames housing data:
 
 
 ---
-# Putting the process together
+# Putting the process together .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4]
 
 .scrollable90[
 .pull-left[
