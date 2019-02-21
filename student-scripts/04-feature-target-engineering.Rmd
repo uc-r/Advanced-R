@@ -1,0 +1,197 @@
+---
+title: "Feature & Target Engineering"
+output: html_notebook
+---
+
+# Prerequisites
+
+```{r slide-3}
+# packages required
+library(dplyr)
+library(ggplot2)
+library(rsample)
+library(recipes)
+
+# ames data
+ames <- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split <- initial_split(ames, strata = "Sale_Price")
+ames_train <- training(split)
+```
+
+# Visualizing Missing Data
+
+An uncleaned version of Ames housing data:
+
+```{r slide-8}
+sum(is.na(AmesHousing::ames_raw))
+
+AmesHousing::ames_raw %>%
+  is.na() %>%
+  reshape2::melt() %>%
+  ggplot(aes(Var2, Var1, fill=value)) + 
+    geom_raster() + 
+    coord_flip() +
+    scale_y_continuous(NULL, expand = c(0, 0)) +
+    scale_fill_grey(name = "", labels = c("Present", "Missing")) +
+    xlab("Observation") +
+    theme(axis.text.y  = element_text(size = 4))
+
+
+```
+
+```{r slide-9}
+extracat::visna(AmesHousing::ames_raw, sort = "b")
+```
+
+# Structural vs random 
+
+Missing values can be a result of many different reasons; however, these reasons are usually lumped into two categories: 
+
+* informative missingess
+* missingness at random
+
+```{r slide-10}
+AmesHousing::ames_raw %>% 
+  filter(is.na(`Garage Type`)) %>% 
+  select(`Garage Type`, `Garage Cars`, `Garage Area`)
+```
+
+# Options for filtering
+
+Filtering options include:
+
+- removing 
+   - zero variance features
+   - near-zero variance features
+   - highly correlated features (better to do dimension reduction)
+
+- Feature selection
+   - beyond scope of module
+   - see [Applied Predictive Modeling, ch. 19](http://appliedpredictivemodeling.com/)
+
+```{r slide-16}
+caret::nearZeroVar(ames_train, saveMetrics= TRUE) %>% 
+  rownames_to_column() %>% 
+  filter(nzv)
+```
+
+# Label encoding 
+
+* One-hot and dummy encoding are not good when:
+   - you have a lot of categorical features
+   - with high cardinality
+   - or you have ordinal features
+
+* Label encoding:
+   - pure numeric conversion of the levels of a categorical variable
+   - most common: ordinal encoding
+
+Quality variables with natural ordering:
+
+```{r slide-23}
+ames_train %>% select(matches("Qual|QC|Qu"))
+```
+
+```{r slide-24}
+count(ames_train, Overall_Qual)
+```
+
+```{r slide-25}
+recipe(Sale_Price ~ ., data = ames_train) %>%
+  step_integer(Overall_Qual) %>%
+  prep(ames_train) %>%
+  bake(ames_train) %>%
+  count(Overall_Qual)
+```
+
+
+# Putting the process together
+
+* __recipes__ provides a convenient way to create feature engineering blue prints
+* 3 main components to consider
+   1. recipe: define your pre-processing blue print
+   2. prepare: estimate parameters based on training data
+   3. bake/juice: apply blue print to new data
+
+Check out all the available `step_xxx()` functions at http://bit.ly/step_functions
+
+```{r slide-35}
+blueprint <- recipe(Sale_Price ~ ., data = ames_train) %>%
+  step_nzv(all_nominal()) %>%
+  step_center(all_numeric(), -all_outcomes()) %>%
+  step_scale(all_numeric(), -all_outcomes()) %>%
+  step_integer(matches("Qual|Cond|QC|Qu"))
+
+blueprint
+```
+
+```{r slide-36}
+prepare <- prep(blueprint, training = ames_train)
+prepare
+```
+
+```{r slide-37}
+baked_train <- bake(prepare, new_data = ames_train)
+baked_test <- bake(prepare, new_data = ames_test)
+
+baked_train
+```
+
+Let's add a blue print to our modeling process for analyzing the Ames housing data:
+
+1. Split into training vs testing data
+2. Create feature engineering blue print
+3. Specify a resampling procedure
+4. Create our hyperparameter grid
+5. Execute grid search
+6. Evaluate performance
+
+```{r slide-39}
+# 1. stratified sampling with the rsample package
+set.seed(123)
+split  <- initial_split(ames, prop = 0.7, strata = "Sale_Price")
+ames_train  <- training(split)
+ames_test   <- testing(split)
+
+# 2. Feature engineering
+blueprint <- recipe(Sale_Price ~ ., data = ames_train) %>%
+  step_nzv(all_nominal()) %>%
+  step_integer(matches("Qual|Cond|QC|Qu")) %>%
+  step_center(all_numeric(), -all_outcomes()) %>%
+  step_scale(all_numeric(), -all_outcomes()) %>%
+  step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE)
+
+# 3. create a resampling method
+cv <- trainControl(
+  method = "repeatedcv", 
+  number = 10, 
+  repeats = 5
+  )
+
+# 4. create a hyperparameter grid search
+hyper_grid <- expand.grid(k = seq(2, 25, by = 1))
+
+# 5. execute grid search with knn model
+#    use RMSE as preferred metric
+knn_fit <- train(
+  blueprint, 
+  data = ames_train, 
+  method = "knn", 
+  trControl = cv, 
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# 6. evaluate results
+# print model results
+knn_fit
+
+# plot cross validation results
+ggplot(knn_fit$results, aes(k, RMSE)) + 
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = scales::dollar)
+```

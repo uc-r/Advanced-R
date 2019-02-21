@@ -5,9 +5,9 @@
     <meta charset="utf-8">
     <meta name="author" content="Brad Boehmke" />
     <meta name="date" content="2019-02-28" />
-    <script src="libs/kePrint/kePrint.js"></script>
     <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
     <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <script src="libs/kePrint/kePrint.js"></script>
     <link rel="stylesheet" href="scrollable.css" type="text/css" />
     <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
     <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
@@ -62,7 +62,7 @@ Data pre-processing and engineering techniques generally refer to the .blue[___a
 ]
 
 ---
-# Prereqs
+# Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
 
 .pull-left[
 
@@ -180,7 +180,7 @@ class: center, middle, inverse
 .white[_Many models cannot cope with missing data so imputation strategies may be necessary._]
 
 ---
-# Visualizing
+# Visualizing .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
 
 An uncleaned version of Ames housing data:
 
@@ -216,7 +216,7 @@ AmesHousing::ames_raw %&gt;%
 ]
 
 ---
-# Visualizing
+# Visualizing .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
 
 An uncleaned version of Ames housing data:
 
@@ -243,7 +243,7 @@ extracat::visna(AmesHousing::ames_raw, sort = "b")
 ]
 
 ---
-# Structural vs random
+# Structural vs random .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 4]
 
 .pull-left[
 
@@ -365,7 +365,7 @@ Excessive noisy variables can...
 &lt;img src="images/impact-on-time-1.png" width="2560" style="display: block; margin: auto;" /&gt;
 
 ---
-# Options for filtering
+# Options for filtering .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 5]
 
 .pull-left[
 Filtering options include:
@@ -617,7 +617,7 @@ Two most common approaches include...
 ]
 
 ---
-# Label encoding
+# Label encoding .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 6]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -636,27 +636,28 @@ Two most common approaches include...
 
 
 ```r
-ames_train %&gt;% select(contains("Qual"))
-## # A tibble: 2,199 x 6
-##    Overall_Qual Exter_Qual Bsmt_Qual Low_Qual_Fin_SF Kitchen_Qual
-##    &lt;fct&gt;        &lt;fct&gt;      &lt;fct&gt;               &lt;int&gt; &lt;fct&gt;       
-##  1 Above_Avera… Typical    Typical                 0 Good        
-##  2 Good         Good       Typical                 0 Excellent   
-##  3 Average      Typical    Good                    0 Typical     
-##  4 Above_Avera… Typical    Typical                 0 Good        
-##  5 Very_Good    Good       Good                    0 Good        
-##  6 Very_Good    Good       Good                    0 Good        
-##  7 Good         Typical    Typical                 0 Good        
-##  8 Above_Avera… Typical    Good                    0 Typical     
-##  9 Above_Avera… Typical    Good                    0 Typical     
-## 10 Good         Typical    Good                    0 Good        
-## # … with 2,189 more rows, and 1 more variable: Garage_Qual &lt;fct&gt;
+ames_train %&gt;% select(matches("Qual|QC|Qu"))
+## # A tibble: 2,199 x 9
+##    Overall_Qual Exter_Qual Bsmt_Qual Heating_QC Low_Qual_Fin_SF
+##    &lt;fct&gt;        &lt;fct&gt;      &lt;fct&gt;     &lt;fct&gt;                &lt;int&gt;
+##  1 Above_Avera… Typical    Typical   Typical                  0
+##  2 Good         Good       Typical   Excellent                0
+##  3 Average      Typical    Good      Good                     0
+##  4 Above_Avera… Typical    Typical   Excellent                0
+##  5 Very_Good    Good       Good      Excellent                0
+##  6 Very_Good    Good       Good      Excellent                0
+##  7 Good         Typical    Typical   Good                     0
+##  8 Above_Avera… Typical    Good      Good                     0
+##  9 Above_Avera… Typical    Good      Excellent                0
+## 10 Good         Typical    Good      Good                     0
+## # … with 2,189 more rows, and 4 more variables: Kitchen_Qual &lt;fct&gt;,
+## #   Fireplace_Qu &lt;fct&gt;, Garage_Qual &lt;fct&gt;, Pool_QC &lt;fct&gt;
 ```
 
 ]
 
 ---
-# Label encoding
+# Label encoding .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 7]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -694,7 +695,7 @@ count(ames_train, Overall_Qual)
 ]
 
 ---
-# Label encoding
+# Label encoding .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 8]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -886,7 +887,7 @@ ___Data leakage___ is when information from outside the training dataset is used
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 9]
 
 .pull-left[
 
@@ -933,7 +934,7 @@ blueprint
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 10]
 
 .pull-left[
 
@@ -973,7 +974,7 @@ prepare
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 11]
 
 .scrollable90[
 .pull-left[
@@ -1062,7 +1063,7 @@ baked_train
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 12]
 
 .scrollable90[
 .pull-left[

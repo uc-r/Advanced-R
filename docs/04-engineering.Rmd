@@ -79,7 +79,7 @@ Data pre-processing and engineering techniques generally refer to the .blue[___a
 ]
 
 ---
-# Prereqs
+# Prereqs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
 .pull-left[
 
@@ -232,7 +232,7 @@ class: center, middle, inverse
 .white[_Many models cannot cope with missing data so imputation strategies may be necessary._]
 
 ---
-# Visualizing
+# Visualizing .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
 
 An uncleaned version of Ames housing data:
 
@@ -276,7 +276,7 @@ AmesHousing::ames_raw %>%
 ]
 
 ---
-# Visualizing
+# Visualizing .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
 
 An uncleaned version of Ames housing data:
 
@@ -302,7 +302,7 @@ extracat::visna(AmesHousing::ames_raw, sort = "b")
 ]
 
 ---
-# Structural vs random
+# Structural vs random .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4]
 
 .pull-left[
 
@@ -384,7 +384,7 @@ knn_juiced <- recipe(Sale_Price ~ ., data = impute_ames) %>%
   prep(training = impute_ames, retain = TRUE) %>%
   juice()
 
-knn_impute <- bagged_juiced[index, ]
+knn_impute <- knn_juiced[index, ]
   
 p3 <- ggplot() +
   geom_point(data = actuals, aes(Gr_Liv_Area, Sale_Price), color = "red") +
@@ -473,7 +473,7 @@ knitr::include_graphics("images/impact-on-time-1.png")
 ```
 
 ---
-# Options for filtering
+# Options for filtering .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 5]
 
 .pull-left[
 Filtering options include:
@@ -659,7 +659,7 @@ caret::dummyVars( ~ ., ex1, fullRank = FALSE) %>%
 ]
 
 ---
-# Label encoding
+# Label encoding .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 6]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -677,13 +677,13 @@ caret::dummyVars( ~ ., ex1, fullRank = FALSE) %>%
 .center.bold[Quality variables with natural ordering]
 
 ```{r}
-ames_train %>% select(contains("Qual"))
+ames_train %>% select(matches("Qual|QC|Qu"))
 ```
 
 ]
 
 ---
-# Label encoding
+# Label encoding .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 7]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -707,7 +707,7 @@ count(ames_train, Overall_Qual)
 ]
 
 ---
-# Label encoding
+# Label encoding .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 8]
 
 .pull-left[
 * One-hot and dummy encoding are not good when:
@@ -909,7 +909,7 @@ knitr::include_graphics("https://raw.githubusercontent.com/rstudio/hex-stickers/
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 9]
 
 .pull-left[
 
@@ -941,7 +941,7 @@ blueprint
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 10]
 
 .pull-left[
 
@@ -964,7 +964,7 @@ prepare
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 11]
 
 .scrollable90[
 .pull-left[
@@ -1020,7 +1020,7 @@ knitr::include_graphics("https://media1.tenor.com/images/6358cb41e076a3c517e5a99
 ]
 
 ---
-# Putting the process together
+# Putting the process together .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 12]
 
 .scrollable90[
 .pull-left[
