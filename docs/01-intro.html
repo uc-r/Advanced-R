@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Advanced Analytics with R</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Brad Boehmke" />
+    <meta name="date" content="2019-02-28" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link href="libs/academicons/css/academicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="scrollable.css" type="text/css" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: title-slide   
+&lt;a href="https://github.com/uc-r/Advanced-R"&gt;&lt;img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"&gt;&lt;/a&gt;
+
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+# .font200[Advanced Analytics with <span>&lt;i class="fab  fa-r-project faa-pulse animated faa-slow " style=" color:steelblue;"&gt;&lt;/i&gt;</span>]
+
+### Brad Boehmke
+### Feb 28 - Mar 1, 2019
+
+
+---
+
+class: clear, center, middle
+
+
+background-image: url(images/introductions.jpg)
+background-size: cover
+
+
+---
+
+# About me
+
+.pull-left[
+
+&lt;img src="images/name-tag.png" width="1360" style="display: block; margin: auto;" /&gt;
+
+* [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 496 512"&gt;&lt;path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"/&gt;&lt;/svg&gt;](http://bradleyboehmke.github.io/) bradleyboehmke.github.io
+* [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 496 512"&gt;&lt;path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/&gt;&lt;/svg&gt;](https://github.com/bradleyboehmke/) @bradleyboehmke
+* [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 512 512"&gt;&lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/&gt;&lt;/svg&gt;](https://twitter.com/bradleyboehmke) @bradleyboehmke
+* [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 448 512"&gt;&lt;path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/&gt;&lt;/svg&gt;](https://www.linkedin.com/in/brad-boehmke-ph-d-9b0a257/) @bradleyboehmke
+* [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 512 512"&gt;&lt;path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/&gt;&lt;/svg&gt;](mailto:bradleyboehmke@gmail.com) bradleyboehmke@gmail.com
+
+]
+
+
+.pull-right[
+
+#### Family &lt;img src="images/family.png" align="right" alt="family" width="130" /&gt;
+
+* Dayton, OH
+* Kate, Alivia (9), Jules (6)
+
+
+#### Professional 
+
+* 84.51° - Data Science Enabler &lt;img src="images/logo8451.jpg" align="right" alt="family" width="150" /&gt;
+
+#### Academic
+
+* University of Cincinnati &lt;img src="images/uc.png" align="right" alt="family" width="100" /&gt;
+* Air Force Institute of Technology
+
+#### R Community
+
+&lt;img src="images/r-contributions.png" alt="family" width="400" /&gt;
+
+]
+
+---
+# Data science courses
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+.pull-left[
+.font120[
+
+| Course | Dates |
+|:------|:------:|
+| Intro to R | Dec 13-14 |
+| Intermediate R | Jan 31 - Feb 1 |
+| Advanced Analytics with R <span>&lt;i class="fas  fa-map-pin faa-flash animated " style=" color:red;"&gt;&lt;/i&gt;</span> | Feb 28 - Mar 1 |
+| Machine Learning with R | Apr 1-2 |
+
+]
+]
+
+.pull-right[
+
+&lt;img src="images/data-science-flow-overall.png" width="2432" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Course objectives
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+.font130[
+This workshop will step through the process of building, visualizing, testing, and comparing supervised and unsupervised models. The goal is to expose you to building machine learning models in R using a variety of packages and model types.
+]
+
+&lt;br&gt;&lt;br&gt;
+
+.center.bold[_You will gain deeper knowledge around the analytic modeling process and apply various supervised and unsupervised machine learning algorithms_]
+
+---
+# Course overview
+
+.font110[Moving from an analytic apprentice to journeyman with the <span>&lt;i class="fab  fa-r-project faa-FALSE animated " style=" color:steelblue;"&gt;&lt;/i&gt;</span> programming language:]
+
+.font90[
+
+.pull-left[
+
+.center[.bold[Day 1]]
+
+| Topic                               |     Time      |
+| :---------------------------------- | :-----------: |
+| .opacity[&lt;s&gt;Breakfast / Social time&lt;/s&gt;]      |  &lt;s&gt;8:00 - 9:00&lt;/s&gt;  |
+| Introductions                       |  9:00 - 9:30  |
+| Unsupervised modeling               |  9:30 - 10:45 |
+| .opacity[Break]                     | 10:45 - 11:00 |
+| Supervised modeling process         | 11:00 - 12:00 |
+| .opacity[Lunch]                     | 12:00 - 1:00  |
+| Feature &amp; target engineering        |  1:00 - 2:15  |
+| .opacity[Break]                     |  2:15 - 2:30  |
+| Regression &amp; cousins                |  2:30 - 3:45  |
+| Q&amp;A                                 |  3:45 - 4:30  |
+
+]
+]
+
+--
+
+.font90[
+
+.pull-right[
+
+.center[.bold[Day 2]]
+ 
+| Topic                                    |     Time      |
+| :----------------------------------------| :-----------: |
+| .opacity[Breakfast / Social time]        |  8:00 - 9:00  |
+| Decision trees, bagging, &amp; random forests | 9:00 - 10:45 |
+| .opacity[Break]                          | 10:45 - 11:00 |
+| Gradient boosting machines               | 11:00 - 12:00 |
+| .opacity[Lunch]                          | 12:00 - 1:00  |
+| Stacked models &amp; auto ML                 |  1:00 - 2:00  |
+| .opacity[Break]                          |  2:00 - 2:15  |
+| Interpretable machine learning           |  2:15 - 3:45  |
+| Q&amp;A                                      |  3:45 - 4:30  |
+
+]
+]
+
+---
+# A hands-on learning environment
+
+.pull-left[
+
+### You may be overwhelmed
+
+&lt;img src="images/drowning.gif" height="400" style="display: block; margin: auto;" /&gt;
+
+]
+
+--
+
+.pull-right[
+
+### So work together
+
+&lt;img src="images/dogs-helping.gif" height="400" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Class material
+
+&lt;a href="https://github.com/uc-r/Advanced-R" class="github-corner" aria-label="View source on Github"&gt;&lt;svg width="80" height="80" viewBox="0 0 250 250" style="fill:#fff; color:#151513; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"&gt;&lt;path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"&gt;&lt;/path&gt;&lt;path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"&gt;&lt;/path&gt;&lt;path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;&lt;style&gt;.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}&lt;/style&gt;
+
+.pull-left[
+
+### Source code 
+
+- <span>&lt;i class="fab  fa-github faa-pulse animated-hover "&gt;&lt;/i&gt; GitHub</span>: [github.com/uc-r/Advanced-R](https://github.com/uc-r/Advanced-R)
+
+   - <span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover "&gt;&lt;/i&gt; Slides</span>
+
+   - <span>&lt;i class="fas  fa-code faa-pulse animated-hover "&gt;&lt;/i&gt; Student Scripts</span>
+
+   - <span>&lt;i class="fas  fa-database faa-pulse animated-hover "&gt;&lt;/i&gt; Data</span>
+
+]
+
+--
+
+.pull-right[
+
+### UC R Programming Guide 
+
+- http://uc-r.github.io
+
+&lt;img src="images/uc-guide.png" width="500" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+class: yourturn
+# Your Turn!
+
+&lt;br&gt;
+## .font140[Meet your neighbors:]
+
+.font130[
+1. What is their experience with R and advanced analytics?
+
+2. What programming experience other than R do they have?
+
+3. How are they using, or how do they plan to use, R and advanced analytics in their job?
+]
+
+---
+class: yourturn
+# Your Turn!
+
+&lt;br&gt;
+## .font140[Meet your neighbors:]
+
+&lt;img src="https://media1.tenor.com/images/82ed88212e7752741e898cdd0fba7824/tenor.gif?itemid=3426841" width="85%" height="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+class: clear, center, middle
+
+background-image: url(images/prereqs.jpg)
+background-size: cover
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+.pull-left-narrow[
+.font200[Prerequisites]
+]
+
+---
+
+# Software
+
+.pull-left[
+
+### R (programming language) &lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 581 512"&gt;&lt;path d="M581 226.6C581 119.1 450.9 32 290.5 32S0 119.1 0 226.6C0 322.4 103.3 402 239.4 418.1V480h99.1v-61.5c24.3-2.7 47.6-7.4 69.4-13.9L448 480h112l-67.4-113.7c54.5-35.4 88.4-84.9 88.4-139.7zm-466.8 14.5c0-73.5 98.9-133 220.8-133s211.9 40.7 211.9 133c0 50.1-26.5 85-70.3 106.4-2.4-1.6-4.7-2.9-6.4-3.7-10.2-5.2-27.8-10.5-27.8-10.5s86.6-6.4 86.6-92.7-90.6-87.9-90.6-87.9h-199V361c-74.1-21.5-125.2-67.1-125.2-119.9zm225.1 38.3v-55.6c57.8 0 87.8-6.8 87.8 27.3 0 36.5-38.2 28.3-87.8 28.3zm-.9 72.5H365c10.8 0 18.9 11.7 24 19.2-16.1 1.9-33 2.8-50.6 2.9v-22.1z"/&gt;&lt;/svg&gt;
+
+1. Go to https://cran.r-project.org/
+2. Click "Download R for Mac/Windows"
+3. Download the appropriate file:
+   - Windows users click Base, and download the installer for the latest R version
+   - Mac users select the file R-3.X.X that aligns with your OS version
+4. Follow the instructions of the installer   
+
+]
+
+.pull-right[
+
+### RStudio (IDE) &lt;img src="https://dfsuknfbz46oq.cloudfront.net/p/icons/rstudio.png" width="35" align="center"/&gt;
+
+1. Go to RStudio for desktop https://www.rstudio.com/products/rstudio/download/#download
+2. Select the install file for your OS
+3. Follow the instructions of the installer  
+
+]
+
+&lt;br&gt;
+&lt;br&gt;
+
+.center[
+.content-box-gray[.bold[You should have R version 3.4.5 or greater installed.]]
+]
+
+---
+# Environment
+
+This course uses several R 📦 .  You should've ran the `00-run-this-script-first.R` to ensure you have all required packages.
+
+.scrollable90[
+
+```r
+###############################
+# Setting Up Your Environment #
+###############################
+# the following packages will be used
+list_of_pkgs &lt;- c(
+  "AmesHousing",   # provides data we'll use
+  "tidyverse",     # data munging &amp; visualization
+  "reshape2",      # data transformation for one example
+  "extracat",      # visualizing missing data (one example)
+  "cluster",       # clustering techniques
+  "factoextra",    # clustering &amp; PCA visualizations
+  "rsample",       # sampling procedures
+  "recipes",       # feature engineering procedures
+  "caret",         # meta modeling package,
+  "h2o",           # meta modeling, model stacking, &amp; auto ML
+  "glmnet",        # regularized regression
+  "earth",         # multivariate adaptive regression splines
+  "ranger",        # fast random forest
+  "gbm",           # gradient boosting machines
+  "xgboost",       # extreme gradient boosting
+  "broom",         # provides model result clean up
+  "vip",           # model interpretation
+  "pdp",           # model interpretation
+  "iml",           # model interpretation
+  "DALEX",         # model interpretation
+  "lime"           # model interpretation
+)
+
+# run the following line of code to install the packages you currently do not have
+new_pkgs &lt;- list_of_pkgs[!(list_of_pkgs %in% installed.packages()[,"Package"])]
+if(length(new_pkgs)) install.packages(new_pkgs)
+```
+
+]
+
+---
+# Knowledge
+
+This course makes some assumptions about your prior knowledge. To ensure your success, you should have reviewed the material covered in the Intro to R [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 496 512"&gt;&lt;path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/&gt;&lt;/svg&gt;](https://github.com/uc-r/Intro-R) and Intermediate R [&lt;svg style="height:0.8em;top:.04em;position:relative;fill:steelblue;" viewBox="0 0 496 512"&gt;&lt;path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/&gt;&lt;/svg&gt;](https://github.com/uc-r/Intermediate-R) courses.
+
+.pull-left[
+.bold.center[Intro to R]
+
+| Topics                  | &amp;nbsp;&amp;nbsp; Slides &amp;nbsp;&amp;nbsp; |
+| :---------------------- | :-----: |
+| R &amp; RStudio fundamentals &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-1a-intro.html) |
+| Importing data          | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-1b-import.html) |
+| Data transformation     | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-1c-transform.html) |
+| Data visualization      | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-1e-visualization.html) |
+| Data types              | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-2b-data-types.html) |
+| Tidy data               | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-2c-tidy.html) |
+| Joining data            | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-2d-joins.html) |
+| Data structures         | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intro-R/day-2e-data-structures.html) | 
+
+]
+
+.pull-left[
+.bold.center[Intermediate R]
+
+| Topics                  | &amp;nbsp;&amp;nbsp; Slides &amp;nbsp;&amp;nbsp; |
+| :---------------------- | :-----: |
+| Scoped variable transformation | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-1b-scoped-dplyr.html) |
+| Control statements          | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-1c-control-flow.html) |
+| Workflow     | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-1d-workflow.html) |
+| Iteration with loops      | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-2b-loops.html) |
+| Iteration with functional programming              | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-2c-fp.html) |
+| Writing functions               | [<span>&lt;i class="fab  fa-slideshare faa-pulse animated-hover " style=" color:steelblue;"&gt;&lt;/i&gt;</span>](https://uc-r.github.io/Intermediate-R/day-2d-functions.html) |
+
+]
+
+---
+# Data
+
+.scrollable90[
+.pull-left[
+
+.center.bold[Unsupervised Methods]
+
+1973 Arrests per 100K residents for assault, murder, and rape in each of the 50 US states (World Almanac, 1975) [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://books.google.ch/books?id=zl9qAAAAMAAJ&amp;pg=PA20).
+- .bold[problem type]: unsupervised (clustering &amp; dimension reduction)
+- .bold[features]: 4
+- .bold[observations]: 50
+- .bold[objective]: find common attributes across states or crimes
+- .bold[access]: provided in base R
+- .bold[more details]: See `?USArrests`
+
+
+```r
+# access data
+crime &lt;- USArrests
+
+# initial dimension
+dim(crime)
+## [1] 50  4
+
+# first few observations
+head(crime)
+##            Murder Assault UrbanPop Rape
+## Alabama      13.2     236       58 21.2
+## Alaska       10.0     263       48 44.5
+## Arizona       8.1     294       80 31.0
+## Arkansas      8.8     190       50 19.5
+## California    9.0     276       91 40.6
+## Colorado      7.9     204       78 38.7
+```
+
+]
+
+.pull-right[
+
+.center.bold[Supervised Methods]
+
+Ames, IA property sales information (De Cock, 2011) [<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](https://www.tandfonline.com/doi/pdf/10.1080/10691898.2011.11889627).
+- .bold[problem type]: supervised regression
+- .bold[response variable]: sale price (i.e. $195,000, $215,000)
+- .bold[features]: 80
+- .bold[observations]: 2,930
+- .bold[objective]: use property attributes to predict the sale price of a home
+- .bold[access]: provided by the `AmesHousing` package
+- .bold[more details]: See `?AmesHousing::ames_raw`
+
+
+```r
+# access data
+ames &lt;- AmesHousing::make_ames()
+
+# initial dimension
+dim(ames)
+## [1] 2930   81
+
+# response variable
+head(ames$Sale_Price)
+## [1] 215000 105000 172000 244000 189900 195500
+
+# first few observations
+head(ames)
+## # A tibble: 6 x 81
+##   MS_SubClass MS_Zoning Lot_Frontage Lot_Area Street Alley Lot_Shape
+##   &lt;fct&gt;       &lt;fct&gt;            &lt;dbl&gt;    &lt;int&gt; &lt;fct&gt;  &lt;fct&gt; &lt;fct&gt;    
+## 1 One_Story_… Resident…          141    31770 Pave   No_A… Slightly…
+## 2 One_Story_… Resident…           80    11622 Pave   No_A… Regular  
+## 3 One_Story_… Resident…           81    14267 Pave   No_A… Slightly…
+## 4 One_Story_… Resident…           93    11160 Pave   No_A… Regular  
+## 5 Two_Story_… Resident…           74    13830 Pave   No_A… Slightly…
+## 6 Two_Story_… Resident…           78     9978 Pave   No_A… Slightly…
+## # … with 74 more variables: Land_Contour &lt;fct&gt;, Utilities &lt;fct&gt;,
+## #   Lot_Config &lt;fct&gt;, Land_Slope &lt;fct&gt;, Neighborhood &lt;fct&gt;,
+## #   Condition_1 &lt;fct&gt;, Condition_2 &lt;fct&gt;, Bldg_Type &lt;fct&gt;,
+## #   House_Style &lt;fct&gt;, Overall_Qual &lt;fct&gt;, Overall_Cond &lt;fct&gt;,
+## #   Year_Built &lt;int&gt;, Year_Remod_Add &lt;int&gt;, Roof_Style &lt;fct&gt;,
+## #   Roof_Matl &lt;fct&gt;, Exterior_1st &lt;fct&gt;, Exterior_2nd &lt;fct&gt;,
+## #   Mas_Vnr_Type &lt;fct&gt;, Mas_Vnr_Area &lt;dbl&gt;, Exter_Qual &lt;fct&gt;,
+## #   Exter_Cond &lt;fct&gt;, Foundation &lt;fct&gt;, Bsmt_Qual &lt;fct&gt;, Bsmt_Cond &lt;fct&gt;,
+## #   Bsmt_Exposure &lt;fct&gt;, BsmtFin_Type_1 &lt;fct&gt;, BsmtFin_SF_1 &lt;dbl&gt;,
+## #   BsmtFin_Type_2 &lt;fct&gt;, BsmtFin_SF_2 &lt;dbl&gt;, Bsmt_Unf_SF &lt;dbl&gt;,
+## #   Total_Bsmt_SF &lt;dbl&gt;, Heating &lt;fct&gt;, Heating_QC &lt;fct&gt;,
+## #   Central_Air &lt;fct&gt;, Electrical &lt;fct&gt;, First_Flr_SF &lt;int&gt;,
+## #   Second_Flr_SF &lt;int&gt;, Low_Qual_Fin_SF &lt;int&gt;, Gr_Liv_Area &lt;int&gt;,
+## #   Bsmt_Full_Bath &lt;dbl&gt;, Bsmt_Half_Bath &lt;dbl&gt;, Full_Bath &lt;int&gt;,
+## #   Half_Bath &lt;int&gt;, Bedroom_AbvGr &lt;int&gt;, Kitchen_AbvGr &lt;int&gt;,
+## #   Kitchen_Qual &lt;fct&gt;, TotRms_AbvGrd &lt;int&gt;, Functional &lt;fct&gt;,
+## #   Fireplaces &lt;int&gt;, Fireplace_Qu &lt;fct&gt;, Garage_Type &lt;fct&gt;,
+## #   Garage_Finish &lt;fct&gt;, Garage_Cars &lt;dbl&gt;, Garage_Area &lt;dbl&gt;,
+## #   Garage_Qual &lt;fct&gt;, Garage_Cond &lt;fct&gt;, Paved_Drive &lt;fct&gt;,
+## #   Wood_Deck_SF &lt;int&gt;, Open_Porch_SF &lt;int&gt;, Enclosed_Porch &lt;int&gt;,
+## #   Three_season_porch &lt;int&gt;, Screen_Porch &lt;int&gt;, Pool_Area &lt;int&gt;,
+## #   Pool_QC &lt;fct&gt;, Fence &lt;fct&gt;, Misc_Feature &lt;fct&gt;, Misc_Val &lt;int&gt;,
+## #   Mo_Sold &lt;int&gt;, Year_Sold &lt;int&gt;, Sale_Type &lt;fct&gt;, Sale_Condition &lt;fct&gt;,
+## #   Sale_Price &lt;int&gt;, Longitude &lt;dbl&gt;, Latitude &lt;dbl&gt;
+```
+
+]
+]
+
+---
+class: yourturn
+# Your Turn!
+
+&lt;br&gt;&lt;br&gt;
+
+.font120[
+To get warmed up, let's do some basic exploratory data analysis such as exploratory visualizations or summary statistics with these data sets. The idea is to get a feel for the data.
+
+Let's take 5-10 minutes and work with your neighbors.
+]
+
+---
+# Ready to get started?
+
+&lt;img src="http://www.welovebuzz.com/wp-content/uploads/2016/10/Anchorman-2-The-Legend-Continue-Ron-Burgundy-Will-Ferrell-Are-You-Sure-Gif.gif" width="85%" height="85%" style="display: block; margin: auto;" /&gt;
+
+---
+# Back home
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+[.center[<span>&lt;i class="fas  fa-home fa-10x faa-FALSE animated "&gt;&lt;/i&gt;</span>]](https://github.com/uc-r/Advanced-R)
+
+.center[https://github.com/uc-r/Advanced-R]
+    </textarea>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

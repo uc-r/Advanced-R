@@ -18,7 +18,7 @@ the material covered in this training:
 | Topic                                                                                                |     Time      |
 | :--------------------------------------------------------------------------------------------------- | :-----------: |
 | Breakfast / Social time                                                                              |  8:00 - 9:00  |
-| Getting started                                                                                      |  9:00 - 9:45  |
+| [Getting started](https://uc-r.github.io/Advanced-R/01-intro.html)                                   |  9:00 - 9:45  |
 | [Unsupervised modeling](https://uc-r.github.io/Advanced-R/02-unsupervised-learning.html)             | 9:45 - 10:45  |
 | Break                                                                                                | 10:45 - 11:00 |
 | [Supervised modeling process](https://uc-r.github.io/Advanced-R/03-supervised-modeling-process.html) | 11:00 - 12:00 |
