@@ -74,7 +74,7 @@ background-size: cover
 ]
 
 ---
-# Prereqs
+# Prereqs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
 .pull-left[
 
@@ -134,7 +134,7 @@ lm(Sale_Price ~ Gr_Liv_Area, data = ames_train) %>%
 * Objective function: $\text{minimize} \bigg \{ SSE = \sum^n_{i=1} (y_i - \hat{y}_i)^2 \bigg \} \equiv \text{minimize MSE}$
 
 ---
-# Simple linear regression
+# Simple linear regression .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
 
 .pull-left.font120[
 
@@ -156,7 +156,7 @@ summary(model1)
 ]
 
 ---
-# Multiple linear regression
+# Multiple linear regression .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
 
 .pull-left[
 
@@ -234,7 +234,7 @@ We've fit four models to the Ames housing data:
 ]
 
 ---
-# Assessing model accuracy
+# Assessing model accuracy .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4]
 
 .scrollable90[
 .pull-left[
@@ -276,7 +276,7 @@ set.seed(123)
 ]
 
 ---
-# Assessing model accuracy
+# Assessing model accuracy .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 5]
 
 .scrollable90[
 .pull-left[
@@ -520,7 +520,7 @@ data.frame(
 ]
 
 ---
-# Model concerns
+# Model concerns .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 6]
 
 .pull-left[
 1. Linear relationship
@@ -620,7 +620,7 @@ knitr::include_graphics("images/pcr-steps.png")
 - .bold[caret] provides and integrated `method = "pcr"` that helps to automate the tuning process
 ]
 ---
-# Implementation
+# Implementation .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 7]
 
 .pull-left[
 
@@ -660,7 +660,7 @@ plot(cv_pcr)
 ]
 
 ---
-# Tuning
+# Tuning .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 8]
 
 .scrollable90[
 .pull-left[
@@ -811,7 +811,7 @@ pca_df %>%
 ]
 
 ---
-# Implementation
+# Implementation .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 9]
 
 .pull-left[
 
@@ -1119,7 +1119,7 @@ knitr::include_graphics("images/lambda.001.png")
 ]
 
 ---
-# Tuning
+# Tuning .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 10]
 
 .pull-left[
 
@@ -1176,7 +1176,7 @@ caret::getModelInfo("glmnet")$glmnet$parameters
 )) but these are the preferred.]
 
 ---
-# Implementation
+# Implementation .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 11]
 
 .scrollable90[
 .pull-left[
@@ -1496,7 +1496,7 @@ df %>%
 ]
 
 ---
-# Tuning parameters
+# Tuning parameters .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 12]
 
 MARS models have two tuning parameters:
 
@@ -1517,7 +1517,7 @@ caret::getModelInfo("earth")$earth$parameters
 ]
 
 ---
-# Implementation
+# Implementation .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 13]
 
 .scrollable90[
 .pull-left[
@@ -1566,7 +1566,7 @@ class: center, middle, inverse
 .font300.white[Model Comparison]
 
 ---
-# Comparing error distributions
+# Comparing error distributions .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 14]
 
 .pull-left[
 
@@ -1601,7 +1601,7 @@ class: center, middle, inverse
 .font300.white[Feature Interpretation]
 
 ---
-# Feature importance
+# Feature importance .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 15]
 
 .pull-left[
 
@@ -1628,7 +1628,7 @@ vip(cv_mars)
 ]
 
 ---
-# Feature importance
+# Feature importance .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 16]
 
 ```{r all-vip, fig.height=7, fig.width=16, echo=FALSE}
 p1 <- vip(cv_model4, num_features = 25, bar = FALSE) + ggtitle("OLS")
@@ -1689,7 +1689,7 @@ vip(cv_mars, num_features = 80, bar = FALSE) + ggtitle("MARS")
 ]
 
 ---
-# Feature effects
+# Feature effects .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 17]
 
 .pull-left[
 
@@ -1713,7 +1713,7 @@ pdp::partial(cv_model2, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>%
 ]
 
 ---
-# Feature effects
+# Feature effects .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 18]
 
 <br><br>
 
@@ -1742,7 +1742,7 @@ gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 1)
 ```
 
 ---
-# Feature effects
+# Feature effects .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 19]
 
 Assess the interaction of the top 2 predictors:
 

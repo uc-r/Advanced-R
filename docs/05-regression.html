@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="author" content="Brad Boehmke" />
     <meta name="date" content="2019-02-28" />
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
     <script src="libs/htmlwidgets/htmlwidgets.js"></script>
     <script src="libs/plotly-binding/plotly.js"></script>
     <script src="libs/typedarray/typedarray.min.js"></script>
@@ -14,8 +16,6 @@
     <link href="libs/plotly-htmlwidgets-css/plotly-htmlwidgets.css" rel="stylesheet" />
     <script src="libs/plotly-main/plotly-latest.min.js"></script>
     <script src="libs/kePrint/kePrint.js"></script>
-    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
-    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
     <link rel="stylesheet" href="scrollable.css" type="text/css" />
     <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
     <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
@@ -64,7 +64,7 @@ background-size: cover
 ]
 
 ---
-# Prereqs
+# Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
 
 .pull-left[
 
@@ -115,7 +115,7 @@ class: center, middle, inverse
 * Objective function: `\(\text{minimize} \bigg \{ SSE = \sum^n_{i=1} (y_i - \hat{y}_i)^2 \bigg \} \equiv \text{minimize MSE}\)`
 
 ---
-# Simple linear regression
+# Simple linear regression .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
 
 .pull-left.font120[
 
@@ -156,7 +156,7 @@ summary(model1)
 ]
 
 ---
-# Multiple linear regression
+# Multiple linear regression .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
 
 .pull-left[
 
@@ -200,7 +200,7 @@ We've fit four models to the Ames housing data:
 ]
 
 ---
-# Assessing model accuracy
+# Assessing model accuracy .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 4]
 
 .scrollable90[
 .pull-left[
@@ -257,7 +257,7 @@ set.seed(123)
 ]
 
 ---
-# Assessing model accuracy
+# Assessing model accuracy .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 5]
 
 .scrollable90[
 .pull-left[
@@ -538,7 +538,7 @@ summary(resamples(list(
 ]
 
 ---
-# Model concerns
+# Model concerns .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 6]
 
 .pull-left[
 1. Linear relationship
@@ -641,7 +641,7 @@ Steps:
 - .bold[caret] provides and integrated `method = "pcr"` that helps to automate the tuning process
 ]
 ---
-# Implementation
+# Implementation .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 7]
 
 .pull-left[
 
@@ -689,7 +689,7 @@ plot(cv_pcr)
 ]
 
 ---
-# Tuning
+# Tuning .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 8]
 
 .scrollable90[
 .pull-left[
@@ -813,7 +813,7 @@ class: center, middle, inverse
 ]
 
 ---
-# Implementation
+# Implementation .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 9]
 
 .pull-left[
 
@@ -1012,7 +1012,7 @@ Objective function:
 ]
 
 ---
-# Tuning
+# Tuning .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 10]
 
 .pull-left[
 
@@ -1073,7 +1073,7 @@ caret::getModelInfo("glmnet")$glmnet$parameters
 )) but these are the preferred.]
 
 ---
-# Implementation
+# Implementation .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 11]
 
 .scrollable90[
 .pull-left[
@@ -1296,7 +1296,7 @@ class: center, middle, inverse
 ]
 
 ---
-# Tuning parameters
+# Tuning parameters .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 12]
 
 MARS models have two tuning parameters:
 
@@ -1321,7 +1321,7 @@ caret::getModelInfo("earth")$earth$parameters
 ]
 
 ---
-# Implementation
+# Implementation .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 13]
 
 .scrollable90[
 .pull-left[
@@ -1376,7 +1376,7 @@ class: center, middle, inverse
 .font300.white[Model Comparison]
 
 ---
-# Comparing error distributions
+# Comparing error distributions .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 14]
 
 .pull-left[
 
@@ -1421,7 +1421,7 @@ class: center, middle, inverse
 .font300.white[Feature Interpretation]
 
 ---
-# Feature importance
+# Feature importance .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 15]
 
 .pull-left[
 
@@ -1451,7 +1451,7 @@ vip(cv_mars)
 ]
 
 ---
-# Feature importance
+# Feature importance .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 16]
 
 &lt;img src="05-regression_files/figure-html/all-vip-1.png" style="display: block; margin: auto;" /&gt;
 
@@ -1501,7 +1501,7 @@ vip(cv_mars)
 ]
 
 ---
-# Feature effects
+# Feature effects .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 17]
 
 .pull-left[
 
@@ -1528,14 +1528,14 @@ pdp::partial(cv_model2, pred.var = "Gr_Liv_Area", grid.resolution = 10) %&gt;%
 ]
 
 ---
-# Feature effects
+# Feature effects .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 18]
 
 &lt;br&gt;&lt;br&gt;
 
 &lt;img src="05-regression_files/figure-html/all-pdps, -1.png" style="display: block; margin: auto;" /&gt;
 
 ---
-# Feature effects
+# Feature effects .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 19]
 
 Assess the interaction of the top 2 predictors:
 

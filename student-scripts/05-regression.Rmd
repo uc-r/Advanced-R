@@ -1,0 +1,426 @@
+---
+title: "Regression & Cousins"
+output: html_notebook
+---
+
+# Prereqs 
+
+```{r slide-3}
+# packages required
+library(dplyr)
+library(ggplot2)
+library(rsample)
+library(recipes)
+library(vip)
+
+# ames data
+ames <- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split <- initial_split(ames, strata = "Sale_Price")
+ames_train <- training(split)
+```
+
+# Simple linear regression 
+
+- `lm()` performs OLS in base R
+- `glm()` also performs linear regression but extends to other generalized methods (i.e. logistic regression)
+- `summary(model)` provides many results (i.e. "Residual Standard Error" is the RMSE)
+- No method for resampling (i.e. cross validation) with `lm()`
+
+```{r slide-6}
+model1 <- lm(Sale_Price ~ Gr_Liv_Area, data = ames_train)
+summary(model1)
+```
+
+# Multiple linear regression 
+
+```{r slide-7}
+# OLS model with two predictors
+model2 <- lm(Sale_Price ~ Gr_Liv_Area + Year_Built, data = ames_train)
+
+# OLS model with specified interactions
+model3 <- lm(Sale_Price ~ Gr_Liv_Area + Year_Built + Gr_Liv_Area : Year_Built, data = ames_train)
+
+# include all possible main effects
+model
+```
+
+# Assessing model accuracy 
+
+We've fit four models to the Ames housing data: 
+
+1. a single predictor, 
+2. two predictors, 
+3. two predictors with interaction,
+4. and all possible main effect predictors. 
+
+___Which model is "best"?___
+
+```{r slide-9}
+# create a resampling method
+cv <- trainControl(
+  method = "repeatedcv", 
+  number = 10, 
+  repeats = 5
+  )
+
+# model 1 CV
+set.seed(123)
+(cv_model1 <- train(
+  Sale_Price ~ Gr_Liv_Area, 
+  data = ames_train, 
+  method = "lm", #<<
+  trControl = cv)
+)
+```
+
+Model using most predictors is marginally superior
+
+```{r slide-10}
+# model 2 CV
+set.seed(123)
+cv_model2 <- train(
+  Sale_Price ~ Gr_Liv_Area + Year_Built, 
+  data = ames_train, 
+  method = "lm",
+  trControl = cv
+  )
+
+# model 3 CV
+set.seed(123)
+cv_model3 <- train(
+  Sale_Price ~ Gr_Liv_Area + Year_Built + Gr_Liv_Area : Year_Built, 
+  data = ames_train, 
+  method = "lm",
+  trControl = cv
+  )
+
+# model 4 CV
+set.seed(123)
+cv_model4 <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  method = "lm",
+  trControl = cv
+  )
+
+# Extract out of sample performance measures
+summary(resamples(list(
+  model1 = cv_model1, 
+  model2 = cv_model2, 
+  model3 = cv_model3,
+  model4 = cv_model4
+)))
+```
+
+# Model concerns - multicollinearity
+
+```{r slide-16}
+m1 <- lm(Sale_Price ~ Gr_Liv_Area + TotRms_AbvGrd, data = ames_train)
+m2 <- lm(Sale_Price ~ Gr_Liv_Area, data = ames_train)
+m3 <- lm(Sale_Price ~ TotRms_AbvGrd, data = ames_train)
+
+coef(m1) 
+coef(m2) 
+coef(m3) 
+```
+
+
+# Principal Component Regression
+
+Feature reduction with PCR improves prediction error by ~ $10K
+
+```{r slide-21}
+# 1. hypergrid
+hyper_grid <- expand.grid(ncomp = seq(2, 40, by = 2))
+
+# 2. PCR
+set.seed(123)
+cv_pcr <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "pcr", #<<
+  preProcess = c("zv", "center", "scale"), #<<
+  tuneGrid = hyper_grid, #<<
+  metric = "RMSE"
+  )
+
+# model with lowest RMSE
+cv_pcr$bestTune
+
+cv_pcr$results %>%
+  filter(ncomp == as.numeric(cv_pcr$bestTune))
+
+# plot cross-validated RMSE
+plot(cv_pcr)
+```
+
+
+Tuning
+
+- The number of PCs is the only hyperparameter
+- rule of thumb
+   - assess 2-*p* in evenly divided segments
+   - start with a few and zoom in
+
+```{r slide-22}
+# 1. hypergrid
+p <- length(ames_train) - 1
+hyper_grid <- expand.grid(ncomp = seq(2, 80, length.out = 10)) #<<
+
+# 2. PCR
+set.seed(123)
+cv_pcr <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "pcr", 
+  preProcess = c("zv", "center", "scale"), 
+  tuneGrid = hyper_grid, 
+  metric = "RMSE"
+  )
+
+# RMSE
+cv_pcr$results %>%
+  filter(ncomp == cv_pcr$bestTune$ncomp)
+
+# plot cross-validated RMSE
+plot(cv_pcr)
+```
+
+
+# Partial Least Squares Regression
+
+Using PLS improves prediction error by an additional $500
+
+```{r slide-27}
+# PLS
+set.seed(123)
+cv_pls <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "pls", #<<
+  preProcess = c("zv", "center", "scale"),
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# model with lowest RMSE
+cv_pls$bestTune
+
+cv_pls$results %>%
+  filter(ncomp == as.numeric(cv_pls$bestTune))
+
+# plot cross-validated RMSE
+plot(cv_pls)
+```
+
+
+# Regularized Regression
+
+Tip: find tuning parameters with:
+
+```{r slide-36}
+caret::getModelInfo("glmnet")$glmnet$parameters
+```
+
+Tuning:
+
+* lambda
+   - controls the magnitude of the penalty parameter
+   - rule of thumb: 0.1, 10, 100, 1000, 10000
+
+* alpha
+   - controls the type of penalty (ridge, lasso, elastic net)
+   - rule of thumb: 0, .25, .50, .75, 1
+
+Regularization gives us a slight improvement (~$1K)
+
+```{r slide-38}
+# tuning grid
+hyper_grid <- expand.grid(
+  alpha = seq(0, 1, by = .25),
+  lambda = c(0.1, 10, 100, 1000, 10000)
+)
+
+# perform resampling
+set.seed(123)
+cv_glmnet <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "glmnet", #<<
+  preProcess = c("zv", "center", "scale"),
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# best model
+cv_glmnet$results %>%
+  filter(
+    alpha == cv_glmnet$bestTune$alpha,
+    lambda == cv_glmnet$bestTune$lambda
+    )
+
+# plot results
+plot(cv_glmnet)
+```
+
+
+# Multivariate Adaptive Regression Splines
+
+MARS models have two tuning parameters:
+
+1. _nprune_: the maximum number of terms in the pruned model (including the intercept)
+2. _degree_: the maximum degree of interaction
+
+```{r slide-48}
+caret::getModelInfo("earth")$earth$parameters
+```
+
+MARS' non-linearity gives us a big improvement (~$4.5K)!
+
+```{r slide-49}
+# tuning grid
+hyper_grid <- expand.grid(
+  nprune = seq(2, 50, length.out = 10) %>% floor(),
+  degree = 1:3
+)
+
+# perform resampling
+set.seed(123)
+cv_mars <- train(
+  Sale_Price ~ ., 
+  data = ames_train, 
+  trControl = cv,
+  method = "earth", #<<
+  tuneGrid = hyper_grid,
+  metric = "RMSE"
+  )
+
+# best model
+cv_mars$results %>%
+  filter(
+    nprune == cv_mars$bestTune$nprune,
+    degree == cv_mars$bestTune$degree
+    )
+
+# plot results
+plot(cv_mars)
+```
+
+
+# Model Comparison
+
+```{r slide-51}
+results <- resamples(list(
+  OLS  = cv_model4, 
+  PCR  = cv_pcr, 
+  PLS  = cv_pls,
+  EN   = cv_glmnet,
+  MARS = cv_mars
+  ))
+
+summary(results)$statistics$RMSE
+
+# plot results
+p1 <- bwplot(results, metric = "RMSE")
+p2 <- dotplot(results, metric = "RMSE")
+gridExtra::grid.arrange(p1, p2, nrow = 1)
+```
+
+
+# Feature importance 
+
+vip Package
+
+* variable importance plots illustrate the influence each predictor has
+* many packages have their own vip plots
+* the __vip__ package provides a common output
+* different models measure "importance" differently
+* we'll review this more indepth tomorrow
+
+```{r slide-53}
+# MARS model
+vip(cv_mars)
+```
+
+```{r slide-54}
+# all models
+p1 <- vip(cv_model4, num_features = 25, bar = FALSE) + ggtitle("OLS")
+p2 <- vip(cv_pls, num_features = 25, bar = FALSE) + ggtitle("PLS")
+p3 <- vip(cv_glmnet, num_features = 25, bar = FALSE) + ggtitle("GLMNET")
+p4 <- vip(cv_mars, num_features = 25, bar = FALSE) + ggtitle("MARS")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 1)
+```
+
+# Feature effects 
+
+* feature effects measures the relationship between a feature and the target variable
+* most common approach is a partial dependence plot
+* computs the average response value when all observations use a particular value for a given feature
+* we will review this more tomorrow
+
+```{r slide-57}
+# linear regression model
+pdp::partial(cv_model2, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>% 
+  autoplot()
+```
+
+```{r slide-58}
+# linear regression model
+p1 <- pdp::partial(cv_model2, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>% 
+  autoplot() +
+  ggtitle("OLS") +
+  scale_y_continuous("Predicted Sales Price", 
+                     labels = scales::dollar, 
+                     limits = c(0, 600000))
+
+# PLS model
+p2 <- pdp::partial(cv_pls, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>% 
+  autoplot() +
+  ggtitle("PLS") +
+  scale_y_continuous("Predicted Sales Price", 
+                     labels = scales::dollar, 
+                     limits = c(0, 600000))
+
+# Regularized model
+p3 <- pdp::partial(cv_glmnet, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>% 
+  autoplot() +
+  ggtitle("GLMNET") +
+  scale_y_continuous("Predicted Sales Price", 
+                     labels = scales::dollar, 
+                     limits = c(0, 600000))
+
+# MARS model
+p4 <- pdp::partial(cv_mars, pred.var = "Gr_Liv_Area", grid.resolution = 10) %>% 
+  autoplot() +
+  ggtitle("MARS") +
+  scale_y_continuous("Predicted Sales Price", 
+                     labels = scales::dollar, 
+                     limits = c(0, 600000))
+
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 1)
+```
+
+Assess the interaction of the top 2 predictors:
+
+```{r slide-59}
+pdp::partial(
+  cv_mars,
+  pred.var = c("Gr_Liv_Area", "Year_Built"),
+  grid.resolution = 10
+  ) %>% 
+  pdp::plotPartial(
+    levelplot = FALSE,
+    zlab = "yhat", 
+    drape = TRUE, 
+    colorkey = TRUE, 
+    screen = list(z = -20, x = -60)
+    )
+```
