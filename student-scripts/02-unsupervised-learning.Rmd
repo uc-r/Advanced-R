@@ -1,0 +1,362 @@
+---
+title: "Unsupervised Learning"
+output: html_notebook
+---
+
+# Prerequisites
+
+```{r slide-1}
+## ----package-requirements------------------------------------------------
+library(tidyverse)   # data munging & visualization
+library(cluster)     # additional clustering techniques
+library(factoextra)  # clustering & PCA visualizations
+
+## ----data-requirements---------------------------------------------------
+USArrests                 # primary example data
+AmesHousing::make_ames()  # a few additional examples
+```
+
+# Clustering
+
+## Prepare our data for _k_-means
+
+1. Rows are observations (individuals) and columns are variables.
+2. Any missing value in the data must be removed or estimated.
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+
+```{r slide-15}
+crime <- USArrests %>%
+  drop_na() %>%
+  scale() %>%
+  print()
+```
+
+## Applying k-means
+
+```{r slide-16}
+k3 <- kmeans(crime, centers = 3, nstart = 20)
+
+# tidied output
+broom::tidy(k3)
+
+# full model output
+glimpse(k3)
+```
+
+
+## Interpreting output 
+
+```{r slide-17}
+as_tibble(crime) %>%
+  mutate(
+    cluster = k3$cluster, 
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %>% 
+  gather(Crime, Rate, Murder, Assault, Rape) %>%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+
+## Determining optimal clusters
+
+Fill in the following code chunk to identify the optimal number of clusters for our crime data.
+
+```{r slide-23a}
+# use the elbow heuristic (hint: "wss")
+fviz_nbclust(____, kmeans, method = "___", k.max = 20)
+```
+
+```{r slide-23b}
+# use the gab stat (hint: "gap_stat")
+fviz_nbclust(____, kmeans, method = "___", k.max = 20, verbose = FALSE)
+```
+
+
+## Applying hierarchical clustering
+
+
+```{r slide-33a}
+# you can use hclust
+option1 <- hclust(dist(crime), method = "average")
+plot(option1)
+```
+
+```{r slide-33b}
+# or agnes
+option2 <- cluster::agnes(crime, method = "average")
+plot(option2, which = 2)
+```
+
+## Which method to use?
+
+The `agnes()` function provides an ___agglomerative coefficent___, which measures the amount of clustering structure found (values closer to 1 suggest strong clustering structure).
+
+```{r slide-35a}
+# agglomerative coefficent from earlier agnes() model
+option2$ac
+```
+
+This allows us to find certain hierarchical clustering methods that can identify stronger clustering structures.
+
+```{r slide-35b}
+# methods to assess
+m <- c("average", "single", "complete", "ward")
+names(m) <- m
+
+# function to compute coefficient
+ac <- function(x) {
+  cluster::agnes(crime, method = x)$ac
+}
+
+# get agglomerative coefficient for each linkage method
+map_dbl(m, ac)
+```
+]
+
+
+## Which clusters to use?
+
+Visual assessment
+
+```{r slide-36a}
+# re-run hc with Ward method
+hc_ward <- cluster::agnes(crime, method = "ward")
+
+# highlight 4 clusters
+plot(hc_ward, which = 2)
+rect.hclust(hc_ward, k = 4, border = 2:5)
+```
+
+Elbow method or Gap stat
+
+```{r slide-36b}
+# fviz_nbclust can use differen FUNctions
+# see ?fviz_nbclust & ?hcut
+fviz_nbclust(crime, FUN = hcut, method = "gap_stat", verbose = FALSE)
+```
+
+
+## Extract results and visualize
+
+```{r slide-37}
+as_tibble(crime) %>%
+  mutate(
+    cluster = cutree(hc_ward, k = 3), # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests), " (", cluster, ")")
+    ) %>% 
+  gather(Crime, Rate, Murder, Assault, Rape) %>%
+  ggplot(aes(UrbanPop, Rate, color = factor(cluster), label = label)) +
+  geom_text(show.legend = FALSE) +
+  facet_wrap(~ Crime) +
+  ylab("arrests per 100,000 residents (standardized)")
+```
+
+
+## Ohio's cluster
+
+```{r slide-38}
+# get ohio neighbors with k-means
+df_kmeans <- as_tibble(crime) %>%
+  mutate(
+    cluster = kmeans(crime, 3, nstart = 20)$cluster, # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests))
+    )
+
+ohio_cluster <- filter(df_kmeans, label == "Ohio") %>% pull(cluster)
+
+kmean_friends <- df_kmeans %>%
+  filter(cluster == ohio_cluster) %>%
+  arrange() %>%
+  pull(label)
+
+# get ohio neighbors with hierarchical
+df_hc <- as_tibble(crime) %>%
+  mutate(
+    cluster = cutree(hc_ward, k = 3), # use cutree to get clusters #<<
+    label = paste0(row.names(USArrests))
+    )
+
+ohio_cluster <- filter(df_hc, label == "Ohio") %>% pull(cluster)
+
+hcut_friends <- df_hc %>%
+  filter(cluster == ohio_cluster) %>%
+  arrange() %>%
+  pull(label)
+
+# Common states between _k_-means and Hierarchical clustering
+intersect(hcut_friends, kmean_friends)
+
+# Different states between _k_-means and Hierarchical clustering
+setdiff(union(hcut_friends, kmean_friends), intersect(hcut_friends, kmean_friends))
+```
+
+
+# Dimension Reduction via PCA
+
+## Prepare our data for PCA
+
+1. Rows are observations (individuals) and columns are variables.
+2. Any missing value in the data must be removed or estimated.
+3. The data must be standardized (centered at mean zero and scaled to one standard deviation) to make variables comparable.
+
+```{r slide-47}
+# exact same procedure you ran for clustering
+crime <- USArrests %>%
+  drop_na() %>%
+  scale() %>%
+  print()
+```
+
+4. Apply `prcomp()`
+
+```{r slide-48}
+# perform PCA
+pca_result <- prcomp(crime, scale = FALSE)
+
+# PCA model output
+names(pca_result)
+```
+
+## Understanding PCs 
+
+* `rotation` provides the principal component loadings
+* There will be the same number of PCs as variables
+* Positive vs negative direction:
+   - By default, loadings (aka eigenvectors) in R point in the negative direction. 
+   - Positive pointing eigenvectors are more intuitive 
+   - To use the positive-pointing vector, we multiply the default loadings by -1.
+
+```{r slide-49}
+# convert loadings to positive
+pca_result$rotation <- -pca_result$rotation
+
+# there will be the same number of PCs as variables
+pca_result$rotation
+```
+
+___Loadings represent coefficients; illustrates each variables influence on the principal component___
+
+## Understanding PCs 
+
+We can visualize these contributions
+
+PC1 appears to represent violent crime
+
+```{r slide-50a}
+fviz_contrib(pca_result, choice = "var", axes = 1)
+```
+
+PC2 appears to represent urban density
+
+```{r slide-50b}
+fviz_contrib(pca_result, choice = "var", axes = 2)
+```
+
+
+## Understanding PCs 
+
+* `x` provides the principal component scores
+* The principal components scores simply places a standardized score for each observation for each principal component.
+* Interpretation example: Alaska
+   - PC1: 1.93 standard deviations above average value for PC1 (high violent crime)
+   - PC2: 1 standard deviation below average value for PC2 (low urbanization)
+
+```{r slide-51}
+pca_result$x <- -pca_result$x
+pca_result$x
+```
+
+## Selecting the number of PCs
+
+* The goal of PCA is dimension reduction but how many PCs do we keep?
+
+* Two common approaches:
+   1. scree plot  
+      a. Eigenvalue: retain PCs $\geq$ 1 (an eigenvalue of 1 means that the principal component would explain about one variable’s worth of the variability)  
+      b. Variance explained: look for elbow
+
+```{r slide-53}
+fviz_screeplot(pca_result, choice = "eigenvalue")
+fviz_screeplot(pca_result, choice = "variance")
+```
+
+   2. proportion of variance explained
+
+```{r slide-54}
+# compute eigenvalues
+eigen <- pca_result$sdev^2
+
+# compute the PVE of each principal component
+PVE <- eigen / sum(eigen)
+
+# how many PCs required to explain at least 90% of total variability
+min(which(cumsum(PVE) >= .90))
+```
+
+___PVE provides us a technical way to identify the optimal number of principal components to keep based on the total variability that we would like to account for. In feature engineering, it is common for the default to be set at 95%.___
+
+## Insight interpretation 
+
+
+```{r slide-55a}
+fviz_pca_var(pca_result, alpha.var = "contrib")
+```
+
+```{r slide-55b}
+fviz_pca(pca_result, alpha.ind = .5, labelsize = 3, repel = TRUE)
+```
+
+
+## PCA with mixed data 
+
+* Rarely do we have only numeric data
+* But what do we do with categorical features?
+* The answer is...it depends
+* PCA for inference
+   - option 1: one hot encode
+   - option 2: use GLRMs 
+
+One-hot encoding example:
+
+```{r slide-57}
+# full ames data set --> recode ordinal variables to numeric
+ames_full <- AmesHousing::make_ames() %>%
+  mutate_if(str_detect(names(.), "Qual|Cond|QC|Qu"), as.numeric)
+
+# one-hot encode --> retain only the features and not sale price
+full_rank  <- caret::dummyVars(Sale_Price ~ ., data = ames_full, fullRank = TRUE)
+ames_1hot <- predict(full_rank, ames_full)
+
+# new dimensions
+dim(ames_1hot)
+
+# apply PCA to one-hot encoded data
+pca_one_hot <- prcomp(ames_1hot, scale = TRUE)
+
+# sign adjustment to loadings and scores
+pca_one_hot$rotation <- -pca_one_hot$rotation
+pca_one_hot$x <- -pca_one_hot$x
+
+# scree plot
+fviz_screeplot(pca_one_hot, ncp = 20, choice = "eigenvalue")
+```
+
+* PCA for downstream modeling
+
+```{r slide-58}
+# get feature set
+ames_full <- AmesHousing::make_ames()
+features <- subset(ames_full, select = -Sale_Price)
+
+# preprocess data
+preprocess <- caret::preProcess(
+  x = features,
+  method = c("center", "scale", "pca"),
+  thresh = 0.95
+)
+
+preprocess
+```

@@ -569,6 +569,16 @@ class: yourturn
 
 Fill in code chunks 5 &amp; 6 to identify the optimal number of clusters for our crime data.
 
+```
+# use the elbow heuristic (hint: "wss")
+fviz_nbclust(____, kmeans, method = "___", k.max = 20)
+```
+
+```
+# use the gab stat (hint: "gap_stat")
+fviz_nbclust(____, kmeans, method = "___", k.max = 20)
+```
+
 ]
 
 --
@@ -1340,7 +1350,7 @@ fviz_contrib(pca_result, choice = "var", axes = 2)
 ```r
 # convert scores to positive
 pca_result$x &lt;- -pca_result$x
--pca_result$x
+pca_result$x
 ##                        PC1         PC2         PC3          PC4
 ## Alabama         0.97566045 -1.12200121  0.43980366 -0.154696581
 *## Alaska          1.93053788 -1.06242692 -2.01950027  0.434175454
