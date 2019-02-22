@@ -48,13 +48,19 @@ the topics should remain the same.***
 To prepare for this course please complete the following ***prior*** to
 the day of class:
 
-1.  Download the class material at [TBD](). This will provide you with
-    the data and R scripts to follow along during class.
+1.  Download the class material
+    [here](https://www.dropbox.com/sh/cpz3lqwr963x6mt/AAAdGTNgiiwdDg9SmawSmyjGa?dl=1).
+    This will provide you with the R scripts and notebooks to follow
+    along during class.
 
-2.  All slides are available via the hyperlinks in the schedule above so
+2.  After downloading the files, open the `00-run-this-script-first.R`
+    and run the code. This will make sure you have all required packages
+    that will be used in the class.
+
+3.  All slides are available via the hyperlinks in the schedule above so
     that you can follow along.
 
-3.  Please have the following versions of R and RStudio installed. If
+4.  Please have the following versions of R and RStudio installed. If
     you have an earlier version of R that is at least version 3.4.5 or
     later you should be ok but its best to be as current as possible.
     
@@ -63,7 +69,7 @@ the day of class:
       - RStudio: 1.1.463 \[[download latest
         version](https://www.rstudio.com/products/rstudio/download/#download)\]
 
-4.  This course makes ***strong*** assumptions about your prior
+5.  This course makes ***strong*** assumptions about your prior
     knowledge such as your ability to define functions, manage R
     objects, control the flow of a program, and other basic tasks. To
     ensure your success, be sure that you have reviewed and are
