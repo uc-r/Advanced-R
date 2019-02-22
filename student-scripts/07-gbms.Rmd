@@ -1,0 +1,499 @@
+---
+title: "Gradient Boosting Machines"
+output: html_notebook
+---
+
+# Prereqs 
+
+```{r slide-3}
+library(gbm)
+library(xgboost)
+library(vip)
+library(pdp)
+
+# ames data
+ames <- AmesHousing::make_ames()
+
+# split data
+set.seed(123)
+split <- rsample::initial_split(ames, strata = "Sale_Price")
+ames_train <- rsample::training(split)
+```
+
+# Basic GBM 
+
+gbm package:
+
+- The original R implementation of GMBs (by Greg Ridgeway)
+- Slower than modern implementations (but still pretty fast)
+- Provides OOB error estimate
+- Supports the weighted tree traversal method for fast construction of PDPs
+
+Let's run your first GBM model
+
+```{r slide-17}
+set.seed(123)
+ames_gbm <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. 
+  n.trees = 5000, 
+  shrinkage = 0.1, 
+  interaction.depth = 1, 
+  n.minobsinnode = 10, 
+  cv.folds = 5 
+  )  
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm$cv.error[min_MSE])
+```
+
+# Number of trees
+
+- The averaging in bagging and RF makes it very difficult to overfit with too many trees
+- GBMs will chase residuals as long as you allow them to
+- Consequently:
+   - We must provide enough trees to minimize error
+   - But not too many where we begin to overfit
+   - .red[plus, number of trees is dependent on other hyperparameters]
+
+Use CV or OOB
+
+```{r slide-22}
+gbm.perf(ames_gbm, method = "cv") # or "OOB"
+```
+
+# Tuning strategy 
+
+1. fix tree hyperparameters
+    - moderate tree depth
+    - default min obs
+2. set our learning rate at .01
+3. increase CV to ensure unbiased error estimate
+4. Results
+   - Lowest error rate yet ($21,914.55)!
+   - Used nearly all our trees --> increase to 6000?
+   - took ~ 2.25 min
+5. Compared to learning rate of .001
+   - error rate of $24,791.66
+   - took ~ 4 min
+
+This model run takes ~2 mins 
+
+```{r slide-28}
+set.seed(123)
+ames_gbm1 <- gbm(
+  formula = Sale_Price ~ .,
+  data = ames_train,
+  distribution = "gaussian", # or bernoulli, multinomial, etc. #<<
+  n.trees = 5000, #<<
+  shrinkage = 0.01, #<<
+  interaction.depth = 3, #<<
+  n.minobsinnode = 10, #<<
+  cv.folds = 10 #<<
+  )
+
+# find index for n trees with minimum CV error
+min_MSE <- which.min(ames_gbm1$cv.error)
+
+# get MSE and compute RMSE
+sqrt(ames_gbm1$cv.error[min_MSE])
+
+gbm.perf(ames_gbm1, method = "cv")
+```
+
+# Tuning strategy 
+
+Now let's tune the tree-specific hyperparameters
+
+* we could do it in `caret` but lets use functional programming
+* assess 3 values for tree depth
+* assess 3 values for min obs in terminal node
+
+___This grid search takes ~30 mins; remember, I said the ML process is more of a marathon than a sprint!!___
+
+```{r slide-29}
+# search grid
+hyper_grid <- expand.grid(
+  n.trees = 6000,
+  shrinkage = .01,
+  interaction.depth = c(3, 5, 7), #<<
+  n.minobsinnode = c(5, 10, 15) #<<
+)
+
+model_fit <- function(n.trees, shrinkage, interaction.depth, n.minobsinnode) {
+  set.seed(123)
+  m <- gbm(
+    formula = Sale_Price ~ .,
+    data = ames_train,
+    distribution = "gaussian",
+    n.trees = n.trees,
+    shrinkage = shrinkage, #<<
+    interaction.depth = interaction.depth, #<<
+    n.minobsinnode = n.minobsinnode,
+    cv.folds = 10
+  )
+  # compute RMSE
+  sqrt(min(m$cv.error))
+}
+
+hyper_grid$rmse <- pmap_dbl(
+  hyper_grid,
+  ~ model_fit(
+    n.trees = ..1,
+    shrinkage = ..2,
+    interaction.depth = ..3,
+    n.minobsinnode = ..4
+    )
+)
+
+arrange(hyper_grid, rmse)
+```
+
+# Applying a Stochastic GBM
+
+- start by assessing if values between 0.5-0.8 outperform your previous best model
+- zoom in with a second round of tuning
+- smaller values will tell you that overfitting was occurring
+
+```{r slide-32}
+bag_frac <- c(.5, .65, .8) #<<
+
+for(i in bag_frac) {
+  set.seed(123)
+  m <- gbm(
+    formula = Sale_Price ~ .,
+    data = ames_train,
+    distribution = "gaussian",
+    n.trees = 6000, 
+    shrinkage = 0.01, 
+    interaction.depth = 7, 
+    n.minobsinnode = 5,
+    bag.fraction = i, #<<
+    cv.folds = 10 
+    )
+  # compute RMSE
+  print(sqrt(min(m$cv.error)))
+}
+```
+
+
+# Extreme Gradient Boosting
+
+# Prereqs
+
+* __xgboost__ requires that our features are one-hot encoded
+* __caret__ and __h2o::h2o.xgboost__ can automate this for you
+* In this preprocessing I:
+   - collapse low frequency levels to "other"
+   - convert ordered factors to integers (aka label encode)
+   
+___Pro tip: If you have I cardinality categorical features, label or ordinal encoding often improves performance and speed!___
+
+```{r slide-35}
+library(recipes)
+xgb_prep <- recipe(Sale_Price ~ ., data = ames_train) %>%
+  step_other(all_nominal(), threshold = .005) %>%
+  step_integer(all_nominal()) %>%
+  prep(training = ames_train, retain = TRUE) %>%
+  juice()
+
+X <- as.matrix(xgb_prep[setdiff(names(xgb_prep), "Sale_Price")])
+Y <- xgb_prep$Sale_Price
+```
+
+# First XGBoost model 
+
+* `nrounds`: 6,000 trees 
+* `objective`: `reg:linear` for regression but other options exist (i.e. `reg:logistic`, `binary:logistic`, `num_class`)
+* `early_stopping_rounds`: stop training if CV RMSE doesn't improve for 50 trees in a row 
+* `nfold`: 10-fold CV 
+
+___This grid search takes ~20 secs___
+
+```{r slide-36}
+set.seed(123)
+ames_xgb <- xgb.cv(
+  data = X,
+  label = Y,
+  nrounds = 5000,
+  objective = "reg:linear",
+  early_stopping_rounds = 50, 
+  nfold = 10,
+  verbose = 0,
+  )  
+
+ames_xgb$evaluation_log %>% tail()
+```
+
+# Tuning 
+
+1. ___Crank up the trees and tune learning rate with early stopping___
+   - initial test RMSE results:
+   - .red[`eta = .3` (default): 24,382 w/200 trees (< 1 min)]
+   - .red[`eta = .1`: 22,333 w/398 trees (< 1 min)]
+   - .green[`eta = .05`: 21,877 w/978 trees (1.5 min)]
+   - .red[`eta = .01`: 22,094 w/2843 trees (4 min)]
+   
+As a comparison, if you one-hot encoded the feature set it takes 30 mins to run with `eta = .01`!
+
+___This grid search takes ~1.5 min___
+
+```{r slide-37}
+set.seed(123)
+ames_xgb <- xgb.cv(
+  data = X,
+  label = Y,
+  nrounds = 6000,
+  objective = "reg:linear",
+  early_stopping_rounds = 50, 
+  nfold = 10,
+  verbose = 0,
+  params = list(eta = .05) #<<
+  )  
+
+ames_xgb$evaluation_log %>% tail()
+```
+
+# Tuning 
+
+1. Crank up the trees and tune learning rate with early stopping
+2. ___Tune tree-specific hyperparameters___
+   - tree depth
+   - instances required to make additional split
+
+* Preferred values: 
+   - `max_depth` = 3
+   - `min_child_weight` = 3
+   - RMSE = 20989.27
+
+___This grid search takes ~30 min___
+
+```{r slide-38}
+# grid
+hyper_grid <- expand.grid(
+  eta = .05,
+  max_depth = c(1, 3, 5, 7, 9), #<<
+  min_child_weight = c(1, 3, 5, 7, 9), #<<
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m <- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+    params = list( #<<
+      eta = hyper_grid$eta[i], #<<
+      max_depth = hyper_grid$max_depth[i], #<<
+      min_child_weight = hyper_grid$min_child_weight[i] #<<
+    ) #<<
+  )
+  hyper_grid$rmse[i] <- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+```
+
+# Tuning 
+
+1. Crank up the trees and tune learning rate with early stopping
+2. Tune tree-specific hyperparameters
+3. ___Add stochastic attributes with___
+   - subsampling rows for each tree
+   - subsampling columns for each tree 
+
+* Preferred values: 
+   - `subsample` = 0.80
+   - `colsample_bytree` = 1
+   - RMSE = 20732.22
+
+___This grid search takes ~12 min___
+
+```{r slide-39}
+# grid
+hyper_grid <- expand.grid(
+  eta = .05,
+  max_depth = 3, 
+  min_child_weight = 3,
+  subsample = c(.5, .65, .8, 1), #<<
+  colsample_bytree = c(.5, .65, .8, 1), #<<
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m <- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+    params = list( #<<
+      eta = hyper_grid$eta[i],
+      max_depth = hyper_grid$max_depth[i],
+      min_child_weight = hyper_grid$min_child_weight[i],
+      subsample = hyper_grid$subsample[i], #<<
+      colsample_bytree = hyper_grid$colsample_bytree[i] #<<
+    ) #<<
+  )
+  hyper_grid$rmse[i] <- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+```
+
+
+# Tuning
+
+1. Crank up the trees and tune learning rate with early stopping
+2. Tune tree-specific hyperparameters
+3. Add stochastic attributes with
+4. ___See if adding regularization helps___
+   - gamma: tested 1, 100, 1000, 10000 -- no effect
+   - lambda: tested 0.001, 0.01, 0.1, 1, 100, 1000 -- no effect
+   - alpha: tested 0.001, 0.01, 0.1, 1, 100, 1000 -- minor improvement
+
+* Preferred value:
+   - `alpha` = 100
+   - RMSE = 20581.31
+
+___This grid search takes ~5 min___
+
+```{r slide-41}
+hyper_grid <- expand.grid(
+  eta = .05,
+  max_depth = 3, 
+  min_child_weight = 3,
+  subsample = .8, 
+  colsample_bytree = 1,
+  #gamma = c(1, 100, 1000, 10000),
+  #lambda = c(1e-2, 0.1, 1, 100, 1000, 10000),
+  alpha = c(1e-2, 0.1, 1, 100, 1000, 10000), #<<
+  rmse = 0 # a place to dump results
+  )
+
+# grid search
+for(i in seq_len(nrow(hyper_grid))) {
+  set.seed(123)
+  m <- xgb.cv(
+    data = X,
+    label = Y,
+    nrounds = 6000,
+    objective = "reg:linear",
+    early_stopping_rounds = 50, 
+    nfold = 10,
+    verbose = 0,
+    params = list( 
+      eta = hyper_grid$eta[i], 
+      max_depth = hyper_grid$max_depth[i],
+      min_child_weight = hyper_grid$min_child_weight[i],
+      subsample = hyper_grid$subsample[i], #<<
+      colsample_bytree = hyper_grid$colsample_bytree[i],
+      #gamma = hyper_grid$gamma[i], 
+      #lambda = hyper_grid$lambda[i]#, 
+      alpha = hyper_grid$alpha[i] #<<
+    ) 
+  )
+  hyper_grid$rmse[i] <- min(m$evaluation_log$test_rmse_mean)
+}
+
+arrange(hyper_grid, rmse)
+```
+
+# Tuning 
+
+1. Crank up the trees and tune learning rate with early stopping
+2. Tune tree-specific hyperparameters
+3. Add stochastic attributes with
+4. See if adding regularization helps
+5. If you find hyperparameter values that are substantially different from default settings, be sure to assess the learning rate again
+6. ___Rerun final "optimal" model with `xgb.cv()` to get iterations required and then with `xgboost()` to produce final model___
+
+___`final_cv`] test RMSE: 20,581.31___
+
+```{r slide-42}
+# parameter list
+params <- list(
+  eta = .05,
+  max_depth = 3, 
+  min_child_weight = 3,
+  subsample = .8, 
+  colsample_bytree = 1,
+  alpha = 100
+)
+
+# final cv fit
+set.seed(123)
+final_cv <- xgb.cv(
+  data = X,
+  label = Y,
+  nrounds = 6000,
+  objective = "reg:linear",
+  early_stopping_rounds = 50, 
+  nfold = 10,
+  verbose = 0,
+  params = params #<<
+  ) 
+
+# train final model
+ames_final_xgb <- xgboost(
+  data = X,
+  label = Y,
+  nrounds = final_cv$best_iteration, #<<
+  objective = "reg:linear",
+  params = params, #<<
+  verbose = 0
+)
+```
+
+# Feature Importance
+
+```{r slide-44}
+vip::vip(ames_final_xgb, num_features = 25)
+```
+
+# Feature Effects (PDP)
+
+```{r slide-45a}
+ames_final_xgb %>%
+  partial(
+    pred.var = "Gr_Liv_Area", 
+    n.trees = ames_final_xgb$niter, 
+    grid.resolution = 50, 
+    train = X
+    ) %>%
+  autoplot(rug = TRUE, train = X)
+```
+
+# Feature Effects (ICE)
+
+```{r slide-45b}
+ames_final_xgb %>%
+  partial(
+    pred.var = "Gr_Liv_Area", 
+    n.trees = ames_final_xgb$niter, 
+    grid.resolution = 50, 
+    train = X,
+    ice = TRUE
+    ) %>%
+  autoplot(rug = TRUE, train = X, alpha = .05, center = TRUE) 
+```
+
+
+
+
+
+
