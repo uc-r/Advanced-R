@@ -1087,7 +1087,7 @@ background-size: cover
 Image credit: [unsplash](https://unsplash.com/photos/mDinBvq1Sfg)
 
 ---
-# Prereqs
+# Prereqs .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 1]
 
 .font130[Random Forest <span>&lt;i class="fas  fa-toolbox faa-FALSE animated "&gt;&lt;/i&gt;</span>]
 
@@ -1182,8 +1182,7 @@ system.time(
 ]
 
 ---
-
-# Initial Implementation - training
+# Initial Implementation - training .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
 
 .pull-left[
 .font80[
@@ -1225,7 +1224,7 @@ fit_default &lt;- ranger(
 
 ---
 
-# Initial Implementation - results
+# Initial Implementation - results .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
 
 .code70[
 
@@ -1258,7 +1257,7 @@ sqrt(fit_default$prediction.error)
 
 ---
 
-# Characteristics to Consider
+# Characteristics to Consider .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 4-5]
 
 What we do next should be driven by attributes of our data:
 
@@ -1357,7 +1356,7 @@ data_frame(
 
 ---
 
-# Tuning
+# Tuning .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 6]
 
 But before we tune, do we have enough <span class=" faa-pulse animated-hover " style=" display: -moz-inline-stack; display: inline-block; transform: rotate(0deg);">&lt;img src="images/large-tree-icon.png" style="height:1em; width:auto; "/&gt;</span>s?
 
@@ -1421,7 +1420,7 @@ ggplot(data.frame(trees, rmse), aes(trees, rmse)) +
 
 ---
 
-# Tuning
+# Tuning .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 7]
 
 .scrollable90[
 .pull-left[
@@ -1501,7 +1500,7 @@ for(i in seq_len(nrow(hyper_grid))) {
 
 ---
 
-# Tuning results
+# Tuning results .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 8]
 
 .pull-left[
 
@@ -1633,7 +1632,7 @@ cv_ranger &lt;- train(
 ]
 
 ---
-# Feature Importance &lt;a href="https://koalaverse.github.io/vip/index.html"&gt;&lt;img src="images/logo-vip.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+# Feature Importance  .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 9] &lt;a href="https://koalaverse.github.io/vip/index.html"&gt;&lt;img src="images/logo-vip.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
 
 .pull-left[
 
@@ -1674,7 +1673,7 @@ vip(fit_final, num_features = 15)
 ]
 
 ---
-# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+# Feature Effects .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 10-11] &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
 
 Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
 
@@ -1711,7 +1710,7 @@ fit_final %&gt;%
 
 ---
 
-# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+# Feature Effects  .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 12-13] &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
 
 Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
 
@@ -1748,7 +1747,7 @@ fit_final %&gt;%
 
 ---
 
-# Feature Effects &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
+# Feature Effects .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 14] &lt;a href="https://bgreenwell.github.io/pdp/index.html"&gt;&lt;img src="images/pdp-logo.png" class="pdp-hex", align="right"&gt;&lt;/a&gt;
 
 Interaction between two influential variables:
 

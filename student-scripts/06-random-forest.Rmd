@@ -1,0 +1,300 @@
+---
+title: "Random Forests"
+output: html_notebook
+---
+
+# Prereqs 
+
+```{r slide-48}
+# general EDA
+library(dplyr)
+library(ggplot2)
+
+# machine learning
+library(ranger)   #<<  
+library(rsample)  # data splitting
+library(vip)      # visualize feature importance 
+library(pdp)      # visualize feature effects
+
+# Create training (70%) and test (30%) sets for the AmesHousing::make_ames() data.
+# Use set.seed for reproducibility
+set.seed(8451)
+ames_split <- initial_split(AmesHousing::make_ames(), prop = .7, strata = "Sale_Price")
+ames_train <- training(ames_split)
+ames_test  <- testing(ames_split)
+```
+
+# Initial Implementation 
+
+* `formula`: formula specification
+* `data`: training data
+* `num.trees`: number of trees in the forest
+* `mtry`: randomly selected predictor variables at each split. Default is $\texttt{floor}(\sqrt{\texttt{number of features}})$ ; however, for regression problems the preferred `mtry` to start with is $\texttt{floor}(\frac{\texttt{number of features}}{3}) = \texttt{floor}(\frac{80}{3}) = 26$
+* `respect.unordered.factors`: specifies how to treat unordered factor variables. We recommend setting this to "order".
+* `seed`: because this is a random algorithm, you will set the seed to get reproducible results
+
+
+```{r slide-50}
+# number of features
+features <- setdiff(names(ames_train), "Sale_Price")
+
+# perform basic random forest model
+fit_default <- ranger(
+  formula    = Sale_Price ~ ., 
+  data       = ames_train, 
+  num.trees  = length(features) * 10,
+  mtry       = floor(length(features) / 3),
+  respect.unordered.factors = 'order',
+  verbose    = FALSE,
+  seed       = 123
+  )
+
+```
+
+# Results 
+
+Default results are based on OOB errors:
+
+```{r slide-51}
+# look at results
+fit_default
+
+# compute RMSE (RMSE = square root of MSE)
+sqrt(fit_default$prediction.error)
+```
+
+# Characteristics to Consider 
+
+What we do next should be driven by attributes of our data:
+
+- Half our variables are numeric
+- Half are categorical variables with moderate number of levels
+- Likely will favor .blue[variance split rule]
+- May benefit from .blue[sampling w/o replacement]
+
+```{r slide-52a}
+ames_train %>%
+  summarise_if(is.factor, n_distinct) %>% 
+  gather() %>% 
+  arrange(desc(value))
+```
+
+- We have highly correlated data (both btwn features and with target)
+- May favor lower mtry and
+- lower node size to help decorrelate the trees<br><br>
+
+```{r slide-52b}
+cor_matrix <- ames_train %>%
+  mutate_if(is.factor, as.numeric) %>%
+  cor()
+
+# feature correlation
+data_frame(
+  row  = rownames(cor_matrix)[row(cor_matrix)[upper.tri(cor_matrix)]],
+  col  = colnames(cor_matrix)[col(cor_matrix)[upper.tri(cor_matrix)]],
+  corr = cor_matrix[upper.tri(cor_matrix)]
+  ) %>%
+  arrange(desc(abs(corr)))
+
+# target correlation
+data_frame(
+    row  = rownames(cor_matrix)[row(cor_matrix)[upper.tri(cor_matrix)]],
+    col  = colnames(cor_matrix)[col(cor_matrix)[upper.tri(cor_matrix)]],
+    corr = cor_matrix[upper.tri(cor_matrix)]
+) %>% filter(col == "Sale_Price") %>%
+    arrange(desc(abs(corr)))
+```
+
+# Tuning 
+
+But before we tune, do we have enough trees
+
+- Some pkgs provide OOB error for each tree
+- __ranger__ only provides overall OOB
+
+```{r slide-53a}
+# ranger function
+oob_error <- function(trees) {
+  fit <- ranger(
+  formula    = Sale_Price ~ ., 
+  data       = ames_train, 
+  num.trees  = trees, #<<
+  mtry       = floor(n_features / 3),
+  respect.unordered.factors = 'order',
+  verbose    = FALSE,
+  seed       = 123
+  )
+  
+  sqrt(fit$prediction.error)
+}
+
+# tuning grid
+trees <- seq(10, 1000, by = 20)
+
+(rmse <- trees %>% purrr::map_dbl(oob_error))
+```
+
+- using $p \times 10 = 800$ trees is sufficient
+- may increase if we decrease mtry or sample size
+
+```{r slide-53b}
+ggplot(data.frame(trees, rmse), aes(trees, rmse)) +
+  geom_line(size = 1)
+```
+
+# Tuning 
+
+:Tuning grid
+
+- lower end of mtry range due to correlation
+- lower end of node size range due to correlation
+- sampling w/o replacement due to categorical features 
+
+```{r slide-54a}
+hyper_grid <- expand.grid(
+  mtry            = floor(n_features * c(.05, .15, .25, .333, .4)),
+  min.node.size   = c(1, 3, 5),
+  replace         = c(TRUE, FALSE),
+  sample.fraction = c(.5, .63, .8),
+  rmse            = NA
+)
+
+# number of hyperparameter combinations
+nrow(hyper_grid)
+
+head(hyper_grid)
+```
+
+Grid search execution
+
+- This search grid took ~2.5 minutes
+- __caret__ provides grid search 
+- For larger data, use __H2O__'s random grid search with early stopping 
+
+```{r slide-54b}
+for(i in seq_len(nrow(hyper_grid))) {
+  
+  # fit model for ith hyperparameter combination
+  fit <- ranger(
+    formula         = Sale_Price ~ ., 
+    data            = ames_train, 
+    num.trees       = 1000,
+    mtry            = hyper_grid$mtry[i],            #<<
+    min.node.size   = hyper_grid$min.node.size[i],   #<<
+    replace         = hyper_grid$replace[i],         #<<
+    sample.fraction = hyper_grid$sample.fraction[i], #<<
+    verbose         = FALSE,
+    seed            = 123,
+    respect.unordered.factors = 'order',
+  )
+  
+  # export OOB error 
+  hyper_grid$rmse[i] <- sqrt(fit$prediction.error)
+  
+}
+```
+
+# Tuning results 
+
+Our top 10 models:
+
+- have ~1% or higher performance improvement over the default model
+- sample w/o replacement
+- primarily include higher sampling
+- primarily use mtry = 20 or 26
+- node size appears non-influential
+
+I would follow this up with an additional grid search that focuses on:
+
+- mtry values around 15, 18, 21, 24
+- sample fraction around 63%, 70%, 75%, 80%
+
+_using too high of sampling fraction without replacement runs the risk of overfitting to your training data!_
+
+```{r slide-55}
+default_rmse <- sqrt(fit_default$prediction.error)
+
+hyper_grid %>%
+  arrange(rmse) %>%
+  mutate(perc_gain = (default_rmse - rmse) / default_rmse * 100) %>%
+  head(10)
+```
+
+# Feature Importance 
+
+Once you find your optimal model:
+
+- re-run with the respective hyperparameters
+- include `importance` parameter
+- crank up the # of trees to ensure stable vi estimates
+
+```{r slide-58}
+fit_final <- ranger(
+  formula         = Sale_Price ~ ., 
+  data            = ames_train, 
+  num.trees       = 2000,              #<<
+  mtry            = 20,
+  min.node.size   = 1,
+  sample.fraction = .8,
+  replace         = FALSE,
+  importance      = 'permutation',     #<< 
+  respect.unordered.factors = 'order',
+  verbose         = FALSE,
+  seed            = 123
+  )
+
+vip(fit_final, num_features = 15)
+```
+
+# Feature Effects 
+
+Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
+
+PDP: Overall Home Quality
+
+```{r slide-59a}
+fit_final %>%
+  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %>%
+  autoplot()
+```
+
+ICE: Overall Home Quality
+
+```{r slide-59b}
+fit_final %>%
+  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %>%
+  autoplot(alpha = 0.05, center = TRUE)
+```
+
+PDP: Above Ground SqFt
+
+```{r slide-60a}
+fit_final %>%
+  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %>%
+  autoplot()
+```
+
+ICE: Above Ground SqFt
+
+```{r slide-60b}
+fit_final %>%
+  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %>%
+  autoplot(alpha = 0.05, center = TRUE)
+```
+
+Interaction between two influential variables:
+
+```{r slide-61}
+fit_final %>%
+  partial(
+    pred.var = c("Gr_Liv_Area", "Year_Built"),
+    train = as.data.frame(ames_train)
+    ) %>%
+  plotPartial(
+    zlab = "Sale_Price",
+    levelplot = FALSE, 
+    drape = TRUE, 
+    colorkey = FALSE,
+    screen = list(z = 50, x = -60)
+  )
+```

@@ -1605,7 +1605,7 @@ background-size: cover
 Image credit: [unsplash](https://unsplash.com/photos/mDinBvq1Sfg)
 
 ---
-# Prereqs
+# Prereqs .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 1]
 
 .font130[Random Forest `r anicon::faa("toolbox", animate = FALSE)`]
 
@@ -1692,8 +1692,7 @@ system.time(
 ]
 
 ---
-
-# Initial Implementation - training
+# Initial Implementation - training .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 2]
 
 .pull-left[
 .font80[
@@ -1735,7 +1734,7 @@ fit_default <- ranger(
 
 ---
 
-# Initial Implementation - results
+# Initial Implementation - results .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 3]
 
 .code70[
 ```{r initial-implementation-results}
@@ -1751,7 +1750,7 @@ sqrt(fit_default$prediction.error)
 
 ---
 
-# Characteristics to Consider
+# Characteristics to Consider .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 4-5]
 
 What we do next should be driven by attributes of our data:
 
@@ -1806,7 +1805,7 @@ data_frame(
 
 ---
 
-# Tuning
+# Tuning .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 6]
 
 But before we tune, do we have enough `r anicon::cia("images/large-tree-icon.png", animate = "pulse", anitype="hover")`s?
 
@@ -1858,7 +1857,7 @@ ggplot(data.frame(trees, rmse), aes(trees, rmse)) +
 
 ---
 
-# Tuning
+# Tuning .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 7]
 
 .scrollable90[
 .pull-left[
@@ -1928,7 +1927,7 @@ for(i in seq_len(nrow(hyper_grid))) {
 
 ---
 
-# Tuning results
+# Tuning results .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 8]
 
 .pull-left[
 
@@ -2042,7 +2041,7 @@ cv_ranger <- train(
 ]
 
 ---
-# Feature Importance <a href="https://koalaverse.github.io/vip/index.html"><img src="images/logo-vip.png" class="pdp-hex", align="right"></a>
+# Feature Importance  .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 9] <a href="https://koalaverse.github.io/vip/index.html"><img src="images/logo-vip.png" class="pdp-hex", align="right"></a>
 
 .pull-left[
 
@@ -2079,7 +2078,7 @@ vip(fit_final, num_features = 15)
 ]
 
 ---
-# Feature Effects <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
+# Feature Effects .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 10-11] <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
 
 Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
 
@@ -2110,7 +2109,7 @@ fit_final %>%
 
 ---
 
-# Feature Effects <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
+# Feature Effects  .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 12-13] <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
 
 Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves, and other approaches allow us to understand how _important_ variables influence our model's predictions:
 
@@ -2141,7 +2140,7 @@ fit_final %>%
 
 ---
 
-# Feature Effects <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
+# Feature Effects .red[`r anicon::faa("hand-point-right", color = "red", animate = "horizontal")` code chunk 14] <a href="https://bgreenwell.github.io/pdp/index.html"><img src="images/pdp-logo.png" class="pdp-hex", align="right"></a>
 
 Interaction between two influential variables:
 
