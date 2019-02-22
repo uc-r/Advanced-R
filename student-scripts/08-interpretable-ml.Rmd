@@ -1,0 +1,474 @@
+---
+title: "Interpretable Machine Learning"
+output: html_notebook
+---
+
+# Prereqs
+
+```{r slide-15}
+# helper packages
+library(ggplot2)
+library(dplyr)
+
+# setting up machine learning models
+library(rsample)
+library(h2o)
+
+# packages for explaining our ML models
+library(pdp)
+library(vip)
+library(iml)
+library(DALEX)
+library(lime)
+
+# initialize h2o session
+h2o.no_progress()
+h2o.init()
+
+# classification data
+df <- rsample::attrition %>% 
+  mutate_if(is.ordered, factor, ordered = FALSE) %>%
+  mutate(Attrition = ifelse(Attrition == "Yes", 1, 0) %>% as.factor())
+# convert to h2o object
+df.h2o <- as.h2o(df)
+# variable names for resonse & features
+y <- "Attrition"
+x <- setdiff(names(df), y)
+```
+
+
+# Setting up the models
+
+```{r slide-16}
+# elastic net model 
+glm <- h2o.glm(
+  x = x, 
+  y = y, 
+  training_frame = df.h2o,
+  nfolds = 5,
+  fold_assignment = "Modulo",
+  keep_cross_validation_predictions = TRUE,
+  family = "binomial",
+  seed = 123
+  )
+
+# random forest model
+rf <- h2o.randomForest(
+  x = x, 
+  y = y,
+  training_frame = df.h2o,
+  nfolds = 5,
+  fold_assignment = "Modulo",
+  keep_cross_validation_predictions = TRUE,
+  ntrees = 1000,
+  stopping_metric = "AUC",    
+  stopping_rounds = 10,         
+  stopping_tolerance = 0.005,
+  seed = 123
+  )
+
+# gradient boosting machine model
+gbm <-  h2o.gbm(
+  x = x, 
+  y = y,
+  training_frame = df.h2o,
+  nfolds = 5,
+  fold_assignment = "Modulo",
+  keep_cross_validation_predictions = TRUE,
+  ntrees = 1000,
+  stopping_metric = "AUC",    
+  stopping_rounds = 10,         
+  stopping_tolerance = 0.005,
+  seed = 123
+  )
+
+# ensemble
+ensemble <- h2o.stackedEnsemble(
+  x = x,
+  y = y,
+  training_frame = df.h2o,
+  metalearner_nfolds = 5,
+  model_id = "ensemble",
+  base_models = list(glm, rf, gbm),
+  metalearner_algorithm = "glm"
+  )
+```
+
+# Create model agnostic procedures
+
+Set up key ingredients
+
+* data frame of just features
+* numeric vector of response
+* custom prediction function
+
+```{r slide-17}
+# 1. create a data frame with just the features
+features <- as.data.frame(df) %>% select(-Attrition)
+
+# 2. Create a numeric vector with the actual responses
+response <- as.numeric(as.character(df$Attrition))
+
+# 3. Create custom predict function that returns the predicted values as a
+#    vector (probability of purchasing in our example)
+pred <- function(model, newdata)  {
+  results <- as.data.frame(h2o.predict(model, as.h2o(newdata)))
+  return(results[[3L]])
+}
+
+# example of prediction output
+pred(gbm, features) %>% head()
+```
+
+Create a model agnostic object
+
+* __iml__: Class Predictor
+* __DALEX__: Class Explainer
+
+```{r slide-18}
+# IML explainers
+iml_predictor_glm <- Predictor$new(
+  model = glm, 
+  data = features, 
+  y = response, 
+  predict.fun = pred,
+  class = "classification"
+  )
+
+iml_predictor_rf <- Predictor$new(
+  model = rf, 
+  data = features, 
+  y = response, 
+  predict.fun = pred,
+  class = "classification"
+  )
+
+iml_predictor_gbm <- Predictor$new(
+  model = gbm, 
+  data = features,
+  y = response,
+  predict.fun = pred,
+  class = "classification"
+  )
+
+iml_predictor_ensemble <- Predictor$new(
+  model = ensemble, 
+  data = features, 
+  y = response, 
+  predict.fun = pred,
+  class = "classification"
+  )
+
+# DALEX explainers
+dalex_explainer_glm <- DALEX::explain(
+  model = glm,
+  data = features,
+  y = response,
+  predict_function = pred,
+  label = "glm"
+  )
+
+dalex_explainer_rf <- DALEX::explain(
+  model = rf,
+  data = features,
+  y = response,
+  predict_function = pred,
+  label = "rf"
+  )
+
+dalex_explainer_gbm <- DALEX::explain(
+  model = gbm,
+  data = features,
+  y = response,
+  predict_function = pred,
+  label = "gbm"
+  )
+
+dalex_explainer_ensemble <- DALEX::explain(
+  model = ensemble,
+  data = features,
+  y = response,
+  predict_function = pred,
+  label = "ensemble"
+  )
+```
+
+
+# Global feature importance
+
+__iml__ package
+
+```{r slide-23a}
+# compute feature importance with specified loss metric
+iml_vip <- FeatureImp$new(iml_predictor_ensemble, loss = "logLoss")
+
+# output as a data frame
+head(iml_vip$results)
+
+# plot output
+plot(iml_vip) + ggtitle("Ensemble variable importance")
+```
+
+__DALEX__ package
+
+```{r slide-23b}
+dalex_vip_glm <- variable_importance(dalex_explainer_glm, n_sample = -1) 
+dalex_vip_rf  <- variable_importance(dalex_explainer_rf, n_sample = -1)
+dalex_vip_gbm <- variable_importance(dalex_explainer_gbm, n_sample = -1)
+dalex_vip_ensemble <- variable_importance(dalex_explainer_ensemble, n_sample = -1)
+
+plot(dalex_vip_glm, dalex_vip_rf, dalex_vip_gbm, dalex_vip_ensemble, max_vars = 10)
+```
+
+
+# Global feature effects - PDP plots
+
+Partial dependence of `OverTime` variable
+
+```{r slide-25}
+pdp_fun <- function(object, newdata) {
+  # compute partial dependence 
+  pd <- mean(predict(object, as.h2o(newdata))[[3L]])
+  # return data frame with average predicted value
+  return(as.data.frame(pd))
+}
+
+# partial dependence values
+pd_df <- partial(
+  ensemble, 
+  pred.var = "OverTime", 
+  train = features,
+  pred.fun = pdp_fun
+)
+
+# partial dependence
+pd_df
+
+# partial dependence plot
+autoplot(pd_df)
+```
+
+Partial dependence plot of `Age` variable
+
+__pdp__ package
+
+```{r slide-26a}
+# partial dependence values
+partial(
+  ensemble, 
+  pred.var = "Age", 
+  train = features,
+  pred.fun = pdp_fun,
+  grid.resolution = 20
+) %>% 
+  autoplot(rug = TRUE, train = features) + 
+  ggtitle("Age")
+```
+
+__iml__ package
+
+```{r slide-26b}
+Partial$new(iml_predictor_ensemble, "Age", ice = FALSE, grid.size = 20) %>% 
+  plot() + 
+  ggtitle("Age")
+```
+
+__DALEX__ package
+
+```{r}
+p1 <- variable_response(dalex_explainer_glm, variable =  "Age", type = "pdp", grid.resolution = 20)
+p2 <- variable_response(dalex_explainer_rf, variable =  "Age", type = "pdp", grid.resolution = 20)
+p3 <- variable_response(dalex_explainer_gbm, variable =  "Age", type = "pdp", grid.resolution = 20)
+p4 <- variable_response(dalex_explainer_ensemble, variable =  "Age", type = "pdp", grid.resolution = 20)
+
+plot(p1, p2, p3, p4)
+```
+
+
+# H-statistic: 1-way interaction
+
+```{r slide-28}
+interact <- Interaction$new(iml_predictor_ensemble)
+plot(interact)
+```
+
+
+# H-statistic: 2-way interaction
+
+```{r slide-30}
+interact_2way <- Interaction$new(iml_predictor_ensemble, feature = "OverTime")
+plot(interact_2way)
+```
+
+
+# Local Interpretation: ICE curves
+
+__pdp__ package
+
+```{r slide-34}
+# create custom predict function --> must return a data frame
+ice_fun <- function(object, newdata) {
+  as.data.frame(predict(object, newdata = as.h2o(newdata)))[[3L]]
+}
+
+# individual conditional expectations values
+pd_df <- partial(
+  gbm, 
+  pred.var = "Age", 
+  train = features,
+  pred.fun = ice_fun,
+  grid.resolution = 20
+)
+
+# ICE plots
+p1 <- autoplot(pd_df, alpha = 0.1) + ggtitle("Non-centered")
+p2 <- autoplot(pd_df, alpha = 0.1, center = TRUE) + ggtitle("Centered")
+gridExtra::grid.arrange(p1, p2, ncol = 1)
+```
+
+__iml__ package
+
+```{r slide-35}
+iml_ice <- Partial$new(iml_predictor_gbm, "Age", ice = TRUE, grid.size = 20) 
+iml_ice$center(min(features$Age))
+plot(iml_ice)
+
+iml_ice <- Partial$new(iml_predictor_gbm, "OverTime", ice = TRUE, grid.size = 20) 
+plot(iml_ice)
+```
+
+
+# Local Feature Importance
+
+Given the following observations, how do features influence individual predictions?
+
+```{r slide-36}
+# predictions
+predictions <- predict(gbm, df.h2o) %>% .[[3L]] %>% as.vector()
+
+# highest and lowest probabilities
+paste("Observation", which.max(predictions), "has", round(max(predictions), 2), 
+      "probability of attrition") 
+
+paste("Observation", which.min(predictions), "has", round(min(predictions), 2), 
+      "probability of attrition")  
+
+# get these observations
+high_prob_ob <- df[which.max(predictions), ]
+low_prob_ob  <- df[which.min(predictions), ]
+```
+
+# LIME
+
+__lime__ package
+
+```{r slide-38}
+# create explainer object
+lime_explainer <- lime(
+  x = df[, names(features)],
+  model = ensemble, 
+  n_bins = 5
+  )
+
+# perform lime algorithm
+lime_explanation <- lime::explain(
+  x = high_prob_ob[, names(features)], 
+  explainer = lime_explainer, 
+  n_permutations = 5000,
+  dist_fun = "gower",
+  kernel_width = .75,
+  n_features = 10, 
+  feature_select = "highest_weights",
+  label = "p1"
+  )
+
+plot_features(lime_explanation)
+```
+
+tuning __lime__ package
+
+```{r slide-39}
+# create explainer object
+lime_explainer <- lime(
+  x = df[, names(features)],
+  model = ensemble, 
+  n_bins = 6
+  )
+
+# perform lime algorithm
+lime_explanation <- lime::explain(
+  x = high_prob_ob[, names(features)], 
+  explainer = lime_explainer, 
+  n_permutations = 8000,
+  dist_fun = "manhattan",
+  kernel_width = 3,
+  n_features = 10,
+  feature_select = "lasso_path",
+  label = "p1"
+  )
+
+plot_features(lime_explanation)
+```
+
+__iml__ package
+
+```{r slide-40a}
+# fit local model to high probability ob
+lime <- LocalModel$new(
+  predictor = iml_predictor_gbm,  
+  x.interest = high_prob_ob[, names(features)],
+  dist.fun = "gower",
+  kernel.width = NULL,
+  k = 10
+  )
+
+plot(lime)
+```
+
+```{r slide-40b}
+# reapply model to low probability observation
+lime$explain(x.interest = low_prob_ob)
+plot(lime)
+```
+
+# Shapley values
+
+__iml__ package
+
+```{r slide-43a}
+# compute shapley values
+shapley <- Shapley$new(
+  iml_predictor_gbm, 
+  x.interest = high_prob_ob[, names(features)],
+  sample.size = 500
+  )
+
+shapley
+```
+
+```{r slide-43b}
+# plot
+plot(shapley)
+```
+
+# Breakdown
+
+__DALEX__ package
+
+```{r slide-45a}
+# compute breakdown values values
+high_prob_breakdown <- prediction_breakdown(
+  dalex_explainer_gbm, 
+  observation = high_prob_ob[, names(features)],
+  direction = "up"
+  )
+
+# check out the top 10 influential variables for this observation
+high_prob_breakdown[1:10, c(1, 2, 5)]
+```
+
+```{r slide-45b}
+# plot
+plot(high_prob_breakdown)
+```
+
