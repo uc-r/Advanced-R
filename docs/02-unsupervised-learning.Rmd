@@ -190,8 +190,8 @@ Clustering is a broad set of techniques for ___finding subgroups of observations
 * classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
 
 * distance measures
-  - Euclidean: $d_{euc}(x,y) = \sqrt{\sum^n_{i=1}(x_i - y_i)^2}$
-  - Manhattan: $d_{man}(x,y) = \sum^n_{i=1}|(x_i - y_i)|$
+  - Euclidean: $d_{euc}(x_a,x_b) = \sqrt{\sum^P_{j=1}(x_{aj} - x_{bj})^2}$
+  - Manhattan: $d_{man}(x_a,x_b) = \sum^P_{j=1}|x_{aj} - x_{bj}|$
 
 ]
 
@@ -204,13 +204,13 @@ dist(two_states, method = "euclidean")
 dist(two_states, method = "manhattan")
 ```
 ```{r, echo=FALSE, fig.height=3}
-p1 <- ggplot(two_states, aes(Assault, Assault)) +
+p1 <- ggplot(two_states, aes(Murder, Assault)) +
   geom_point() +
   geom_line(lty = "dashed") +
   ggtitle("Euclidean distance")
   
 
-p2 <- ggplot(two_states, aes(Assault, Assault)) +
+p2 <- ggplot(two_states, aes(Murder, Assault)) +
   geom_point() +
   geom_step(lty = "dashed") +
   ggtitle("Manhattan distance")
@@ -544,7 +544,7 @@ Choice for the number of _K_ clusters depends on the goal:
   - monotonic decreasing
   - Most common approach (looks for the kink in the $W(C_k)$)
 - Gap stat ([`r anicon::aia("google-scholar", animate = 'tada', anitype="hover")`](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
-  - compares $\texttt{log}(W(C_k))$ with with their expected values under null reference distribution of the data
+  - compares $\texttt{log}(W(C_k))$ with their expected values under null reference distribution of the data
   - automated way to id "kink"
   - can ID when optimal _k_ is one
 

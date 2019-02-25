@@ -171,8 +171,8 @@ Clustering is a broad set of techniques for ___finding subgroups of observations
 * classification of observations into groups requires methods for computing the distance of the (dis)similarity between each pair of observations
 
 * distance measures
-  - Euclidean: `\(d_{euc}(x,y) = \sqrt{\sum^n_{i=1}(x_i - y_i)^2}\)`
-  - Manhattan: `\(d_{man}(x,y) = \sum^n_{i=1}|(x_i - y_i)|\)`
+  - Euclidean: `\(d_{euc}(x_a,x_b) = \sqrt{\sum^P_{j=1}(x_{aj} - x_{bj})^2}\)`
+  - Manhattan: `\(d_{man}(x_a,x_b) = \sum^P_{j=1}|x_{aj} - x_{bj}|\)`
 
 ]
 
@@ -515,7 +515,7 @@ Choice for the number of _K_ clusters depends on the goal:
   - monotonic decreasing
   - Most common approach (looks for the kink in the `\(W(C_k)\)`)
 - Gap stat ([<span>&lt;i class="ai  ai-google-scholar faa-tada animated-hover "&gt;&lt;/i&gt;</span>](http://web.stanford.edu/~hastie/Papers/gap.pdf)):
-  - compares `\(\texttt{log}(W(C_k))\)` with with their expected values under null reference distribution of the data
+  - compares `\(\texttt{log}(W(C_k))\)` with their expected values under null reference distribution of the data
   - automated way to id "kink"
   - can ID when optimal _k_ is one
 
