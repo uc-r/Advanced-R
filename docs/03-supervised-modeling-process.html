@@ -143,10 +143,12 @@ __Generalizability__: we want an algorithm that not only fits well to our past d
    - spending too much in training (*&gt; 80%*) won’t allow us to get a good assessment of predictive performance. We may find a model that fits the training data very well, but is not generalizable (overfitting),
    - sometimes too much spent in testing (*&lt; 40%*) won’t allow us to get a good assessment of model parameters
 
-* as data gets larger ( `\(n&gt;100K\)` ):
+* as *n* gets larger ( `\(n&gt;100K\)` ):
    - marginal gains with larger sample sizes
    - may use a smaller training sample to increase computation speed
-   - as `\(n \geq p\)` (where *p* represents the number of features), larger samples sizes are often required to identify consistent signals in the features
+
+* as *p* gets larger ( `\(p \geq n\)` )
+   - larger samples sizes are often required to identify consistent signals in the features
 
 ---
 # Mechanics of data splitting .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 2]
@@ -189,7 +191,7 @@ ggplot(train, aes(x = price)) +
 class: yourturn
 # Your Turn! .red[<span>&lt;i class="fas  fa-hand-point-right faa-horizontal animated " style=" color:red;"&gt;&lt;/i&gt;</span> code chunk 3]
 
-1. Use __rsample__ to split the Ames housing data (`ames`) and the Employee attrition data (`churn`) using stratified sampling and with a 80% split.
+1. Use __rsample__ to split the Ames housing data (`ames`) and the Employee attrition data (`churn`) using stratified sampling and with a 70% split.
 
    ```r
    # ames data
@@ -311,8 +313,8 @@ To fit a model to our data, the model terms must be specified. There are .bold[t
 
 ```r
 # Usually, the variables must all be numeric
-pre_vars &lt;- c("Year_Sold", "Longitude", "Latitude")
-model_fn(x = ames_train[, pre_vars], y = ames_train$Sale_Price)
+features &lt;- c("Year_Sold", "Longitude", "Latitude")
+model_fn(x = ames_train[, features], y = ames_train$Sale_Price)
 ```
 
 ]
@@ -374,7 +376,7 @@ lm_caret &lt;- train(Sale_Price ~ ., data = ames_train, method = "lm")
 
 * requires you to be familiar with .red[syntax nuances]
 
-&lt;br&gt;
+&lt;hr style="height:5px; visibility:hidden;" /&gt;
 
 | Algorithm | Package | Code |
 | --------- | ------- | ------------- |
@@ -384,6 +386,7 @@ lm_caret &lt;- train(Sale_Price ~ ., data = ames_train, method = "lm")
 | Decision tree |	__rpart__	|	`predict(obj, type = "prob")` |
 | Random Forest |	__ranger__ |	`predict(obj)$predictions` |
 | Gradient boosting machine |	__gbm__ |	`predict(obj, type = "response", n.trees)` |
+.center.font60[[Revised from Max Kuhn's 2019 RStudio Conference talk](https://resources.rstudio.com/rstudio-conf-2019/parsnip-a-tidy-model-interface)]
 
 .center.bold[You'll be exposed to both direct and meta engines]
 
@@ -632,7 +635,7 @@ class: center, middle, inverse
 ---
 # Bias-variance trade-off
 
-* Prediction errors can be decomposed into two main subcomponents we care about:
+* Prediction errors can be decomposed into two main subcomponents we have control over:
    - error due to “bias”
    - error due to “variance”
    
@@ -909,7 +912,7 @@ ggplot(knn_fit$results, aes(k, RMSE)) +
 
 * Nor have we considered potential feature and target engineering options.  
 
-* The remainder of this workshop will walk you through the journey of identifying alternative solutions and, hopefully, the optimal model.
+* The remainder of this workshop will walk you through the journey of identifying alternative solutions and, hopefully, better performing models.
 
 --
 
