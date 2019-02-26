@@ -829,7 +829,7 @@ step_spatialsign()
 ---
 class: center, middle, inverse
 
-.font300.white[Blue Prints]
+.font300.white[Blueprints]
 
 ---
 # Sequential steps
@@ -879,7 +879,7 @@ knitr::include_graphics("images/data-leakage.png")
 .pull-left[
 .font120[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 ]
 ]
@@ -899,12 +899,12 @@ knitr::include_graphics("https://raw.githubusercontent.com/rstudio/hex-stickers/
 
 .pull-left[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 * 3 main components to consider
-   1. recipe: define your pre-processing blue print
+   1. recipe: define your pre-processing blueprint
    2. prepare: estimate parameters based on training data
-   3. bake/juice: apply blue print to new data
+   3. bake/juice: apply blueprint to new data
 
 ]
 
@@ -913,12 +913,12 @@ knitr::include_graphics("https://raw.githubusercontent.com/rstudio/hex-stickers/
 
 .pull-left[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 * 3 main components to consider
-   1. .bold[recipe: define your pre-processing blue print]
+   1. .bold[recipe: define your pre-processing blueprint]
    2. prepare: estimate parameters based on training data
-   3. bake/juice: apply blue print to new data
+   3. bake/juice: apply blueprint to new data
 
 <br>
 
@@ -945,12 +945,12 @@ blueprint
 
 .pull-left[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 * 3 main components to consider
-   1. recipe: define your pre-processing blue print
+   1. recipe: define your pre-processing blueprint
    2. .bold[prepare: estimate parameters based on training data]
-   3. bake/juice: apply blue print to new data
+   3. bake/juice: apply blueprint to new data
 
 ]
 
@@ -969,12 +969,12 @@ prepare
 .scrollable90[
 .pull-left[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 * 3 main components to consider
-   1. recipe: define your pre-processing blue print
+   1. recipe: define your pre-processing blueprint
    2. prepare: estimate parameters based on training data
-   3. .bold[bake: apply blue print to new data]
+   3. .bold[bake: apply blueprint to new data]
 
 ]
 
@@ -995,12 +995,12 @@ baked_train
 
 .pull-left[
 
-* __recipes__ provides a convenient way to create feature engineering blue prints
+* __recipes__ provides a convenient way to create feature engineering blueprints
 
 * 3 main components to consider
-   1. recipe: define your pre-processing blue print
+   1. recipe: define your pre-processing blueprint
    2. prepare: estimate parameters based on training data
-   3. bake: apply blue print to new data
+   3. bake: apply blueprint to new data
    
 * Luckily, __caret__ simplifies this process for us.
    1. We supply __caret__ a recipe
@@ -1024,11 +1024,11 @@ knitr::include_graphics("https://media1.tenor.com/images/6358cb41e076a3c517e5a99
 
 .scrollable90[
 .pull-left[
-Let's add a blue print to our modeling process for analyzing the Ames housing data:
+Let's add a blueprint to our modeling process for analyzing the Ames housing data:
 
 1. Split into training vs testing data
 
-2. .blue[Create feature engineering blue print]
+2. .blue[Create feature engineering blueprint]
 
 3. Specify a resampling procedure
 
