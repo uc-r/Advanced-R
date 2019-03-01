@@ -2088,7 +2088,7 @@ Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves
 
 ```{r pdp-overall-qual, fig.height=3.75}
 fit_final %>%
-  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %>%
+  pdp::partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %>%
   autoplot()
 ```
 
@@ -2101,7 +2101,7 @@ fit_final %>%
 
 ```{r ice-overall-qual, fig.height=3.75}
 fit_final %>%
-  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %>%
+  pdp::partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %>%
   autoplot(alpha = 0.05, center = TRUE)
 ```
 
@@ -2119,7 +2119,7 @@ Partial dependence plots (PDPs), Individual Conditional Expectation (ICE) curves
 
 ```{r pdp-ground-liv, fig.height=3.75}
 fit_final %>%
-  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %>%
+  pdp::partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %>%
   autoplot()
 ```
 
@@ -2132,7 +2132,7 @@ fit_final %>%
 
 ```{r ice-ground-liv, fig.height=3.75}
 fit_final %>%
-  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %>%
+  pdp::partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %>%
   autoplot(alpha = 0.05, center = TRUE)
 ```
 
@@ -2148,7 +2148,7 @@ Interaction between two influential variables:
 
 ```{r interaction-pdp, eval=FALSE}
 fit_final %>%
-  partial(
+  pdp::partial(
     pred.var = c("Gr_Liv_Area", "Year_Built"),
     train = as.data.frame(ames_train)
     ) %>%

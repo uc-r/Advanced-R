@@ -113,6 +113,9 @@ But before we tune, do we have enough trees
 - __ranger__ only provides overall OOB
 
 ```{r slide-53a}
+# number of features
+n_features <- ncol(ames_train) - 1
+
 # ranger function
 oob_error <- function(trees) {
   fit <- ranger(
@@ -254,7 +257,7 @@ PDP: Overall Home Quality
 
 ```{r slide-59a}
 fit_final %>%
-  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %>%
+  pdp::partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train)) %>%
   autoplot()
 ```
 
@@ -262,7 +265,7 @@ ICE: Overall Home Quality
 
 ```{r slide-59b}
 fit_final %>%
-  partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %>%
+  pdp::partial(pred.var = "Overall_Qual", train = as.data.frame(ames_train), ice = TRUE) %>%
   autoplot(alpha = 0.05, center = TRUE)
 ```
 
@@ -270,7 +273,7 @@ PDP: Above Ground SqFt
 
 ```{r slide-60a}
 fit_final %>%
-  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %>%
+  pdp::partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train)) %>%
   autoplot()
 ```
 
@@ -278,7 +281,7 @@ ICE: Above Ground SqFt
 
 ```{r slide-60b}
 fit_final %>%
-  partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %>%
+  pdp::partial(pred.var = "Gr_Liv_Area", train = as.data.frame(ames_train), ice = TRUE) %>%
   autoplot(alpha = 0.05, center = TRUE)
 ```
 
@@ -286,7 +289,7 @@ Interaction between two influential variables:
 
 ```{r slide-61}
 fit_final %>%
-  partial(
+  pdp::partial(
     pred.var = c("Gr_Liv_Area", "Year_Built"),
     train = as.data.frame(ames_train)
     ) %>%
