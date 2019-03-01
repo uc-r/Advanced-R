@@ -5,7 +5,7 @@ output: html_notebook
 
 # Prerequisites
 
-```{r slide-1}
+```{r slide-5}
 ## ----package-requirements------------------------------------------------
 library(tidyverse)   # data munging & visualization
 library(cluster)     # additional clustering techniques

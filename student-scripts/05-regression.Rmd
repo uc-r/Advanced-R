@@ -12,6 +12,7 @@ library(ggplot2)
 library(rsample)
 library(recipes)
 library(vip)
+library(caret)
 
 # ames data
 ames <- AmesHousing::make_ames()
