@@ -79,3 +79,9 @@ the day of class:
 
 If you have any specific questions prior to the class you can reach out
 to me (Brad Boehmke) directly at <bradleyboehmke@gmail.com>.
+
+-----
+
+![](https://i.creativecommons.org/l/by/4.0/88x31.png) This work is
+licensed under a [Creative Commons Attribution 4.0 International
+License](https://creativecommons.org/licenses/by/4.0/).
